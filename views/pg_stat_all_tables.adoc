@@ -1,0 +1,18 @@
+= pg_stat_all_tables
+
+Esta view contiene una fila por cada tabla en la DB. Muestra estadisticas sobre las tablas. Una variante es utilizar `pg_stat_user_tables` que solo muestra user tables.
+
+== Estructura
+
+* relname: Nombre de la tabla.
+* seq_scan: Numero de sequential scans en esta tabla.
+* seq_tup_read: Numero de rows procesadas por medio de table scans.
+* idx_scan: Numero de index scan en esta tabla.
+* idx_tup_fetch: Numero de rows procesadas por medio de index scans.
+* n_live_tup: Numero estimado de rows vivas.
+* n_dead_tup: Numero estimado de rows muertas.
+* n_tup_ins: Numero de rows insertadas.
+* n_tup_del: Numero de rows borradas.
+* n_tup_upd: Numero de rows actualizadas (Incluye HOT).
+* n_tup_hot_upd: Numero de rows actualizadas usando Heap Only Tuples(HOT).
+* last_autovacuum: Tiempo en el cual se hizo vacuum en esta tabla por el autovacuum daemon.

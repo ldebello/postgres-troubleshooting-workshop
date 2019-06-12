@@ -1,0 +1,3 @@
+= pg_index
+
+Contiene informacion util acerca de los indeces. El resto se puede obtener de pg_class.

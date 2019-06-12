@@ -1,0 +1,45 @@
+= Postgres Troubleshooting Workshop
+
+La idea de este workshop es proveer las herramientas necesarias para analizar los posibles problemas que puedan aparecer en nuestras base de datos.
+
+== Monitoreo
+
+Postgres ofrece algunas views, functions y un catalogo del sistema que resultan muy utiles cuando debemos monitorear nuestras DBs.
+
+=== Views
+
+* link:views/pg_locks.adoc[pg_locks]
+* link:views/pg_stat_database.adc[pg_stat_database]
+* link:views/pg_stat_activity.adoc[pg_stat_activity]
+* link:views/pg_stat_all_tables.adoc[pg_stat_all_tables]
+* link:views/pg_statio_all_tables.adoc[pg_statio_all_tables]
+
+=== Functions
+
+* *current_database()*: Nombre de la DB.
+* *now()*: Retorna fecha y hora con timezone.
+* *pg_backend_pid()*; Retorna el PID asociado a la sesion actual.
+* *pg_cancel_backend(<PID>)*: Cancela el query en ejecuccion.
+* *pg_terminate_backend(<PID>)*: Termina la backend session por ende tambien la conexion.
+* *version()*: Retorna la version de postgres.
+
+=== Catalog
+
+* link:catalog/pg_class.adoc[pg_class]
+* link:catalog/pg_index.adoc[pg_index]
+
+== Queries
+
+* link:sql/show_locks.sql[Show locks]
+* link:sql/show_anomalies.sql[Show anomalies]
+* link:sql/show_autovacuum.sql[Show autovacuum]
+* link:sql/show_io_statistics.sql[Show IO statistics]
+* link:sql/show_unused_indexes.sql[Show unused indexes]
+* link:sql/long_running_queries.sql[Long running queries]
+* link:sql/show_cache_hit_ratio.sql[Show cache hit ratio]
+* link:sql/show_blocked_queries.sql[Show blocked queries]
+* link:sql/show_invalid_indexes.sql[Show invalid indexes]
+* link:sql/show_table_statistics.sql[Show table statistics]
+* link:sql/show_duplicated_indexes.sql[Show duplicated indexes]
+* link:sql/show_indexes_percentage_used.sql[Show indexes percentage used]
+* link:sql/show_table_specific_configurations.sql[Show table specific configurations]
