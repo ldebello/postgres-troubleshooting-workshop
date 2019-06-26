@@ -10,7 +10,8 @@ SELECT
 FROM 
     pg_stat_user_tables
 WHERE
-	n_live_tup != 0
+    schemaname = 'public' AND
+    n_live_tup != 0
 ORDER BY 
     n_dead_tup / (n_live_tup * current_setting('autovacuum_vacuum_scale_factor')::float8 + current_setting('autovacuum_vacuum_threshold')::float8) DESC
 LIMIT 10;

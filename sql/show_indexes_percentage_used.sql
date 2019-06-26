@@ -4,7 +4,8 @@ SELECT
     n_live_tup estime_rows 
 FROM 
     pg_stat_user_tables 
-WHERE 
+WHERE
+    schemaname = 'public' AND
     idx_scan != 0 
 ORDER BY 
     n_live_tup DESC;

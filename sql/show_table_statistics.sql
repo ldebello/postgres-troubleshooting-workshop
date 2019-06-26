@@ -16,3 +16,5 @@ SELECT
     pg_size_pretty(pg_relation_size(relname::regclass)) AS table_size
 FROM 
     pg_stat_user_tables
+WHERE
+    schemaname = 'public'
