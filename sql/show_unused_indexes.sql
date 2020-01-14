@@ -10,4 +10,4 @@ WHERE
     idx_scan = 0 AND 
     indisunique IS FALSE
 ORDER BY
-    pg_relation_size(indexrelid::regclass) DESC
+    pg_relation_size(indexrelid::regclass) DESC;

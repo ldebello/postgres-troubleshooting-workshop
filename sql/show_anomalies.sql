@@ -13,4 +13,4 @@ SELECT
 FROM
 	pg_stat_database
 WHERE
-	xact_commit + xact_rollback != 0
+	xact_commit + xact_rollback != 0;
