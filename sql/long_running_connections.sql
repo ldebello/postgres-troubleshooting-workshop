@@ -1,4 +1,4 @@
--- Lista los backend connection que tienen queries que empezaron hace mas de 5 segundos
+-- Lista los backend connection que empezaron hace mas de 5 segundos
 SELECT
     pid,
     now() - pg_stat_activity.query_start AS duration,
@@ -10,4 +10,4 @@ WHERE
     state != 'idle' AND 
     pid != pg_backend_pid() AND
     datname = current_database() AND
-    (now() - pg_stat_activity.query_start) > interval '5 seconds';
+    (now() - pg_stat_activity.backend_start) > interval '5 seconds';

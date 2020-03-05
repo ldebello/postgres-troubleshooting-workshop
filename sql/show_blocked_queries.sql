@@ -1,4 +1,15 @@
-SELECT 
+-- Simple Version
+SELECT
+    pid,
+    usename,
+    pg_blocking_pids(pid) AS blocked_by,
+    query AS blocked_query
+FROM 
+    pg_stat_activity
+WHERE 
+    cardinality(pg_blocking_pids(pid)) > 0;
+-- Complex Version
+SELECT
     blocked_locks.pid AS blocked_pid,
     blocked_activity.query AS blocked_query,
     blocked_activity.usename AS blocked_user,
