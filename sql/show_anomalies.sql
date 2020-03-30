@@ -2,15 +2,16 @@
 -- rollback_ratio aprox < 5%
 -- deadlocks cercano a 0
 -- conflicts cercano a 0
+-- You can restart this stats doing SELECT pg_stat_reset();
 SELECT
-	datname,
-	(xact_commit * 100) / (xact_commit + xact_rollback) AS commit_ratio,
-	(xact_rollback * 100) / (xact_commit + xact_rollback) AS rollback_ratio,
-	deadlocks,
-	conflicts,
-	temp_files,
-	pg_size_pretty(pg_database_size(datname)) AS db_size
+    datname,
+    (xact_commit * 100) / (xact_commit + xact_rollback) AS commit_ratio,
+    (xact_rollback * 100) / (xact_commit + xact_rollback) AS rollback_ratio,
+    deadlocks,
+    conflicts,
+    temp_files,
+    pg_size_pretty(pg_database_size(datname)) AS db_size
 FROM
-	pg_stat_database
+    pg_stat_database
 WHERE
-	xact_commit + xact_rollback != 0;
+    xact_commit + xact_rollback != 0;
