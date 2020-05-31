@@ -6,11 +6,12 @@ SELECT
     pg_size_pretty(total_bytes) AS total_size
 FROM (
     SELECT 
-        *, 
-        total_bytes - index_bytes - COALESCE(toast_bytes,0) AS table_bytes 
+        *,
+        total_bytes - index_bytes - COALESCE(toast_bytes,0) AS table_bytes
     FROM (
         SELECT 
-            c.oid,nspname AS table_schema, 
+            c.oid,
+            nspname AS table_schema, 
             relname AS table_name, 
             c.reltuples AS row_estimate, 
             pg_total_relation_size(c.oid) AS total_bytes, 
@@ -20,6 +21,7 @@ FROM (
             pg_class c 
                 LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
         WHERE
+            nspname = 'public' AND
             relkind = 'r'
   ) temp1
 ) temp2

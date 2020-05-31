@@ -1,3 +1,0 @@
-= pg_locks
-
-Nos permite obtener informacion acerca de los locks en nuestra DB.

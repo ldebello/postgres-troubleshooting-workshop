@@ -1,8 +1,0 @@
-= pg_stat_database
-
-Esta view contiene una fila por cada DB.
-
-== Estructura
-
-* blks_hit: Numero de veces que disk blocks fueron encontrados en la cache.
-* blks_read: Numero de lecturas de disk blocks.

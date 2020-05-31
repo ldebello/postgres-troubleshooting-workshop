@@ -1,0 +1,66 @@
+= Tools
+
+Revisaremos las distintas herramientas que nos ofrece PostgreSQL.
+
+==  Crear instancia
+
+```
+docker run -d \
+    --name postgres-workshop \
+    -p 15432:5432 \
+    -e POSTGRES_PASSWORD=password \
+    -e POSTGRES_DB=workshop \
+    -v $(pwd)/sakila:/docker-entrypoint-initdb.d \
+    postgres:9.6-alpine
+```
+
+== Configurar PAGER (psql)
+
+export PAGER='/usr/bin/less -S'
+
+*Nota:* El pager es el programa que se encarga de mostrar los resultados de salida, con el parametro -S de less evitamos el line wrapping.
+
+== Conectarnos
+
+```
+psql -h localhost -p 15432 -U postgres
+```
+
+== Commandos
+
+\q -> Salir +
+\l -> Lista de base de datos +
+\c -> Conexion actual y permite cambiar de base de datos +
+\d -> Lista de tablas/views/sequences +
+\d+ *__TABLE__* -> Detalles sobre el objeto +
+\d *__[y|f|i|n|v|x]__* -> Lista de events/functions/indexes/schemas/views/extensions
+\x -> Modo registros
+
+== Catalog
+
+Cada base de datos contiene catalogs donde viven los system schema, por defecto PostgreSQL incluye el _information_schema_ y _pg_catalog_, cada uno contiene distintos data objects (tables, views, functions, etc) que nos seran de utilidad
+
+=== System Views
+
+* https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-ACTIVITY-VIEW[pg_stat_activity]
+** Muestra la actividad de la base de datos. 
+** El tamaño del campo query esta limitado por el parametro _track_activity_query_size_ (SHOW track_activity_query_size). Durante el startup se reserva _max_connections x track_activity_query_size_ de memoria para guardar los queries.
+* https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-DATABASE-VIEW[pg_stat_database]
+** Muestra estadisticas de las bases de datos
+** Podemos reiniciarlas por medio de la funcion _pg_stat_reset()_.
+* https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-BGWRITER-VIEW[pg_stat_bgwriter]
+** Muestra detalles sobre los procesos _writer (Background Writer)_ y _checkpoint (Checkpointer)_
+** El _writer (Background Writer)_ es un proceso separado que escribe los _dirty buffers_ a disco con la intencion de reducir el trabajo del _checkpoint (Checkpointer)_, el numero de buffers se puede ver de la columna _buffers_clean_.
+** El _checkpoint (Checkpointer)_ se ejecuta por intervalos definidos por medio del parametro _checkpoint_timeout_. A su vez puede ser invocado en caso de que se alcance el maximo numero de WAL files.
+** Para entender si el _checkpoint (Checkpointer)_ esta siendo ejecutado en base a los intervalos definidos o siendo forzados, podemos verificar la columna _checkpoints_timed (Indica el numero de scheduled checkpoints)_ y _checkpoints_req (Indica el numero de forced checkpoints).
+** Si nos encontramos con un numero muy alto de __checkpoints_req_ esto podria sugerir un tamaño pequeño de WAL size, para ver el tamaño por WAL podemos ver el parametro _max_wal_size_.
+
+=== System Functions
+
+* *now()*: Retorna fecha y hora con timezone. Si estamos dentro de una transaccion devuelve siempre el mismo resultado.
+* *pg_stat_reset()*
+* *current_database()*: Nombre de la DB.
+* *pg_backend_pid()*; Retorna el PID asociado a la sesion actual.
+* *pg_cancel_backend(<PID>)*: Cancela la backend session.
+* *pg_terminate_backend(<PID>)*: Termina la backend session.
+* *version()*: Retorna la version de postgres.
