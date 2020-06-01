@@ -1,0 +1,9 @@
+= System Functions
+
+* *now()*: Retorna fecha y hora con timezone. Si estamos dentro de una transaccion devuelve siempre el mismo resultado.
+* *pg_stat_reset()*: Reinicia las estadisticas provistas por las https://www.postgresql.org/docs/9.6/monitoring-stats.html[Collected Statistics Views].
+* *current_database()*: Retorna el nombre de la DB.
+* *pg_backend_pid()*; Retorna el PID asociado a la sesion actual.
+* *pg_cancel_backend(<PID>)*: Cancela la backend session.
+* *pg_terminate_backend(<PID>)*: Termina la backend session.
+* *version()*: Retorna la version de postgres.

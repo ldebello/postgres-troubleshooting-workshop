@@ -1,4 +1,3 @@
--- Simple Version
 SELECT
     pid,
     usename,

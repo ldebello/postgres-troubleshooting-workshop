@@ -1,0 +1,26 @@
+== Queries
+
+La siguiente es una lista de queries util para troubleshooting.
+
+* link:show_autovacuum.sql[Show Autovacuum]
+* link:show_blocked_queries.sql[Show Blocked Queries]
+* link:show_cache_hit_ratio.sql[Show Cache Hit Ratio]
+* link:show_connections_per_host.sql[Show Connections Per Host]
+* link:show_cpu_usage_per_query.sql[Show CPU Usage Per Query]
+* link:show_db_stats.sql[Show DB Stats]
+* link:show_duplicated_indexes.sql[Show Duplicated Indexes]
+* link:show_indexes_percentage_used.sql[Show Indexes Percentage Used]
+* link:show_invalid_indexes.sql[Show Invalid Indexes]
+* link:show_io_statistics.sql[Show IO Statistics]
+* link:show_locks.sql[Show Locks]
+* link:show_long_running_connections.sql[Show Long Running Connections]
+* link:show_long_running_queries.sql[Show Long Running Queries]
+* link:show_long_running_transactions.sql[Show Long Running Transactions]
+* link:show_missing_indexes.sql[Show Missing Indexes]
+* link:show_pg_stat_statements.sql[Show pg_stat_statements]
+* link:show_size_information.sql[Show Size Information]
+* link:show_table_specific_configurations.sql[Show Table Configurations]
+* link:show_table_statistics.sql[Show Table Statistics]
+* link:show_total_ratio_per_index.sql[Show Ratio Per Index]
+* link:show_unused_indexes.sql[Show Unused Indexes]
+* link:show_wait_events.sql[Show Wait Events]

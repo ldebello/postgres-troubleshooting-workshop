@@ -1,4 +1,3 @@
--- Muestra los indices duplicados
 SELECT
     pg_size_pretty(SUM(pg_relation_size(idx))::BIGINT) AS index_size,
     (array_agg(idx))[1] AS idx1, 

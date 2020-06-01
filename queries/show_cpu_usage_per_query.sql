@@ -1,4 +1,3 @@
--- Este query requiere la extension de pg_stat_statements
 SELECT
     substring(query, 1, 50) AS short_query,
     round(total_time::numeric, 2) AS total_time,

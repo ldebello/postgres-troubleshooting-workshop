@@ -1,4 +1,3 @@
--- Indica si existe la posibilidad de estar necesitando un index
 SELECT
     relname AS table_name,
     seq_scan - idx_scan AS too_much_seq,

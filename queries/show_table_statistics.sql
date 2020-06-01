@@ -1,4 +1,3 @@
--- Muestra estadisticas de nuestras tablas
 SELECT
     relname AS table_name,
     n_live_tup AS estimate_live_rows,

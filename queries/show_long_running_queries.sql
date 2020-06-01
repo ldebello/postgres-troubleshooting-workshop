@@ -1,4 +1,3 @@
--- Lista los backend connection que tienen queries que empezaron hace mas de 5 segundos
 SELECT
     pid,
     now() - pg_stat_activity.query_start AS duration,

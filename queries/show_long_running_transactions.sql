@@ -1,4 +1,3 @@
--- Lista los backend connection que tienen transacciones que empezaron hace mas de 5 segundos
 SELECT
     pid,
     now() - pg_stat_activity.xact_start AS duration,

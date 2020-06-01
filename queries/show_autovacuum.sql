@@ -1,4 +1,3 @@
--- Lista las 10 tablas que necesitan autovacuum, listando de mas a menos urgente.
 SELECT
     relname AS table_name,
     n_live_tup AS estimate_live_rows,

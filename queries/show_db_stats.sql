@@ -1,8 +1,3 @@
--- commit_ratio aprox > 95%
--- rollback_ratio aprox < 5%
--- deadlocks cercano a 0
--- conflicts cercano a 0
--- You can restart this stats doing SELECT pg_stat_reset();
 SELECT
     datname,
     (xact_commit * 100) / (xact_commit + xact_rollback) AS commit_ratio,

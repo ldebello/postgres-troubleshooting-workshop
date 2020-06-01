@@ -2,22 +2,37 @@
 
 La idea de este workshop es proveer las herramientas necesarias para analizar los problemas que puedan aparecer en nuestras base de datos.
 
-== Labs
+== Introduccion
 
-* link:labs/Tools.adoc[Tools]
+Para empezar a revisar los distintos temas debemos preparar nuestro ambiente.
 
-== Queries
+1) Crear instancia
 
-* link:sql/show_locks.sql[Show locks]
-* link:sql/show_anomalies.sql[Show anomalies]
-* link:sql/show_autovacuum.sql[Show autovacuum]
-* link:sql/show_io_statistics.sql[Show IO statistics]
-* link:sql/show_unused_indexes.sql[Show unused indexes]
-* link:sql/long_running_queries.sql[Long running queries]
-* link:sql/show_cache_hit_ratio.sql[Show cache hit ratio]
-* link:sql/show_blocked_queries.sql[Show blocked queries]
-* link:sql/show_invalid_indexes.sql[Show invalid indexes]
-* link:sql/show_table_statistics.sql[Show table statistics]
-* link:sql/show_duplicated_indexes.sql[Show duplicated indexes]
-* link:sql/show_indexes_percentage_used.sql[Show indexes percentage used]
-* link:sql/show_table_specific_configurations.sql[Show table specific configurations]
+```
+docker run -d \
+    --name postgres-workshop \
+    -p 15432:5432 \
+    -e POSTGRES_PASSWORD=password \
+    -e POSTGRES_DB=workshop \
+    -v $(pwd)/sakila:/docker-entrypoint-initdb.d \
+    postgres:9.6-alpine
+``` 
+
+2) Configurar PAGER (psql)
+
+export PAGER='/usr/bin/less -S'
+
+*Nota:* El pager es el programa que se encarga de mostrar los resultados de salida, con el parametro -S de less evitamos el line wrapping.
+
+3) Conectarnos
+
+```
+psql -h localhost -p 15432 -U postgres
+```
+
+== Topics
+
+* link:topics/Commands.adoc[Commands]
+* Catalogs
+** link:topics/SystemViews.adoc[System Views]
+** link:topics/SystemFunctions.adoc[System Functions]
