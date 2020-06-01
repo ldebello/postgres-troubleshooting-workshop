@@ -32,7 +32,7 @@ psql -h localhost -p 15432 -U postgres
 
 == Topics
 
-* link:topics/Commands.adoc[Commands]
+* link:topics/PSQLCommands.adoc[PSQL Commands]
 * Catalogs
 ** link:topics/SystemViews.adoc[System Views]
 ** link:topics/SystemFunctions.adoc[System Functions]

@@ -1,6 +1,4 @@
-== Queries
-
-La siguiente es una lista de queries util para troubleshooting.
+== Troubleshooting
 
 * link:show_autovacuum.sql[Show Autovacuum]
 * link:show_blocked_queries.sql[Show Blocked Queries]
