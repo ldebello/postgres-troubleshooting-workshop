@@ -491,4 +491,4 @@ While the advantages of MVCC are clear it also has some disadvantages.
 
 3. Maintain Indexes this is also related to DELETE strategy which lead to maintain multiples indexes entries for obsolete rows
 
-All these drawbacks are solved with _link:VacuumAnalyze.adoc[AUTOVACUUM]_ and Postgres comes with an auto_vacuum daemon that will run at a configurable frequency. Also use another technique called _link:HOT.adoc[HOT] (Heap Only Tuple)_ to deal cope with indexes in MVCC.
+All these drawbacks are solved with _link:Vacuum.adoc[AUTOVACUUM]_ and Postgres comes with an auto_vacuum daemon that will run at a configurable frequency. Also use another technique called _link:HOT.adoc[HOT] (Heap Only Tuple)_ to deal cope with indexes in MVCC.
