@@ -44,9 +44,9 @@ psql -h localhost -p 15432 -U postgres
 * Catalogs
 ** link:topics/SystemViews.adoc[System Views]
 ** link:topics/SystemFunctions.adoc[System Functions]
-** link:topics/MVCC.adoc[MVCC]
-** link:topics/HOT.adoc[HOT]
-** link:topics/Vacuum.adoc[Vacuum]
+* link:topics/MVCC.adoc[MVCC]
+* link:topics/HOT.adoc[HOT]
+* link:topics/Vacuum.adoc[Vacuum]
 
 == References
 
