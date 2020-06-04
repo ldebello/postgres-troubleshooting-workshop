@@ -1,7 +1,0 @@
-= Autovacuum
-
-Es el proceso por el cual se van limpiando las filas viejas que va dejando el modelo MVCC. Algunos parametros para configurar este proceso son:
-
-* autovacuum_vacuum_threshold: Especifica el minimo numero de filas actualizadas o borradas para ejecutar un VACUUM en una tabla. El valor default es 50. Este valor puede ser configurado a nivel global o especifico por tabla.
-
-* autovacuum_vacuum_scale_factor: Specifies a fraction of the table size to add to autovacuum_vacuum_threshold when deciding whether to trigger a VACUUM. The default is 0.2 (20% of table size). This parameter can only be set in the postgresql.conf file or on the server command line; but the setting can be overridden for individual tables by changing table storage parameters.

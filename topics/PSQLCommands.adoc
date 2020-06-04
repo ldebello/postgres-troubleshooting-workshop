@@ -1,9 +1,13 @@
 = Commands
 
-\q -> Salir +
-\l -> Lista de base de datos +
-\c -> Conexion actual y permite cambiar de base de datos +
-\d -> Lista de tablas/views/sequences +
-\d+ *__TABLE__* -> Detalles sobre el objeto +
-\d *__[y|f|i|n|v|x]__* -> Lista de events/functions/indexes/schemas/views/extensions
-\x -> Modo registros
+Some useful commands for psql.
+
+```
+\q -> Quit +
+\l -> List of DBs +
+\c -> Current connection and switch DB +
+\d -> List of tables/views/sequences +
+\d+ *__TABLE__* -> Details about relation +
+\d *__[y|f|i|n|v|x]__* -> List of events/functions/indexes/schemas/views/extensions
+\x -> Record mode
+```

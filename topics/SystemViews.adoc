@@ -1,18 +1,19 @@
 = System Views
 
+Some usefuls views used by our troubleshooting queries:
+
 * https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-ACTIVITY-VIEW[pg_stat_activity]
-** Muestra la actividad de la base de datos. 
-** El tamaño del campo query esta limitado por el parametro _track_activity_query_size_ (SHOW track_activity_query_size). Durante el startup se reserva _max_connections x track_activity_query_size_ de memoria para guardar los queries.
+** Show current activity
+** The query column show the current or latest query and the length is limited by _track_activity_query_size_ (SHOW track_activity_query_size;). During startup memory is reserved for this _max_connections x track_activity_query_size_.
 * https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-DATABASE-VIEW[pg_stat_database]
-** Muestra estadisticas de las bases de datos
-** Podemos reiniciarlas por medio de la funcion _pg_stat_reset()_.
+** Show stats from our DB.
+** We can restart this stats using _pg_stat_reset()_.
 * https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-BGWRITER-VIEW[pg_stat_bgwriter]
-** Muestra detalles sobre los procesos _writer (Background Writer)_ y _checkpoint (Checkpointer)_
-** El _writer (Background Writer)_ es un proceso separado que escribe los _dirty buffers_ a disco con la intencion de reducir el trabajo del _checkpoint (Checkpointer)_, el numero de buffers se puede ver de la columna _buffers_clean_.
-** El _checkpoint (Checkpointer)_ se ejecuta por intervalos definidos por medio del parametro _checkpoint_timeout_. A su vez puede ser invocado en caso de que se alcance el maximo numero de WAL files.
-** Para entender si el _checkpoint (Checkpointer)_ esta siendo ejecutado en base a los intervalos definidos o siendo forzados, podemos verificar la columna _checkpoints_timed (Indica el numero de scheduled checkpoints)_ y _checkpoints_req (Indica el numero de forced checkpoints).
-** Si nos encontramos con un numero muy alto de __checkpoints_req_ esto podria sugerir un tamaño pequeño de WAL size, para ver el tamaño por WAL podemos ver el parametro _max_wal_size_.
+** Show details about _writer (Background Writer)_ and _checkpoint (Checkpointer)_ process.
+** _writer (Background Writer)_ is a separate process which writes to disk _dirty buffers_, the idea is reduce the amount of work for the _checkpoint (Checkpointer)_. The column _buffers_clean_ shows the number of buffers cleaned by this process.
+** _checkpoint (Checkpointer)_ is executed a regular intervals defined by _checkpoint_timeout_. Also this can be executed on demand when the max number of WAL files is reached.
+** We can use _checkpoints_timed_ and _checkpoints_req_ which indicates timed execution vs on demand execution. A high value on _checkpoints_req_ could indicate a low size for WAL files. We can check WAL Max Size using _max_wal_size_.
 * https://www.postgresql.org/docs/9.6/monitoring-stats.html#PG-STAT-SSL-VIEW[pg_stat_ssl]
-** Informacion SSL de cada conexion
+** Show SSL information.
 * https://www.postgresql.org/docs/9.6/view-pg-locks.html[pg_locks]
-** La columna _mode_ nos indica el tipo de lock obtenido por cada backend process, con esta informacion podemos entender que tipo de operaciones esta haciendo nuestra aplicacion ya que cada operacion necesita distinto tipo de https://www.postgresql.org/docs/9.6/explicit-locking.html[locking]
+** We use the _mode_ column to understand the type of lock acquired by each backend process. We can use the https://www.postgresql.org/docs/9.6/explicit-locking.html[locking documentation] to understand more about this.

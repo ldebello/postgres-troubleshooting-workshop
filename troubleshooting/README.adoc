@@ -1,8 +1,46 @@
-== Troubleshooting
+= Troubleshooting
+
+Collection of multiples queries that may be useful when analyzing performance issues. This includes information about locks, index usage, buffer cache hit ratios and vacuum statistics.
+
+`*cache-hit*`
+[options="nowrap"]
+```
+       name        |         ratio
+-------------------+------------------------
+ Database Hit Rate | 0.99295247815144368919
+ Index Hit Rate    | 0.99797141288561649969
+ Table Hit Rate    | 0.98660064083891639965
+(3 rows)
+```
+
+This command provides information on the efficiency of the buffer cache, for both index reads (index hit rate) as well as table reads (table hit rate). A low buffer cache hit ratio can be a sign that the DB is too small for the workload.
+
+`*vacuum-stats*`
+[options="nowrap"]
+```
+     table       | last_vacuum | last_autovacuum |    rowcount    | dead_rowcount  | autovacuum_threshold | expect_autovacuum
+------------------+-------------+-----------------+----------------+----------------+----------------------+-------------------
+ example          |             |                 |            200 |              0 |             90       |
+(1 row)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 * link:show_autovacuum.sql[Show Autovacuum]
 * link:show_blocked_queries.sql[Show Blocked Queries]
-* link:show_cache_hit_ratio.sql[Show Cache Hit Ratio]
 * link:show_connections_per_host.sql[Show Connections Per Host]
 * link:show_cpu_usage_per_query.sql[Show CPU Usage Per Query]
 * link:show_db_stats.sql[Show DB Stats]

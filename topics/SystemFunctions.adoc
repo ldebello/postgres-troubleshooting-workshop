@@ -1,9 +1,14 @@
 = System Functions
 
-* *now()*: Retorna fecha y hora con timezone. Si estamos dentro de una transaccion devuelve siempre el mismo resultado.
-* *pg_stat_reset()*: Reinicia las estadisticas provistas por las https://www.postgresql.org/docs/9.6/monitoring-stats.html[Collected Statistics Views].
-* *current_database()*: Retorna el nombre de la DB.
-* *pg_backend_pid()*; Retorna el PID asociado a la sesion actual.
-* *pg_cancel_backend(<PID>)*: Cancela la backend session.
-* *pg_terminate_backend(<PID>)*: Termina la backend session.
-* *version()*: Retorna la version de postgres.
+Some useful functions
+
+* *now()*: Return current date and time with time zone. Be aware if you are in a transaction it will return the same value always.
+* *clock_timestamp()*: Return current clock time.
+* *pg_stat_reset()*: Restart stats provided by https://www.postgresql.org/docs/9.6/monitoring-stats.html[Collected Statistics Views].
+* *current_database()*: Return current DB name.
+* *current_setting(<PARAMETER>)*: Return parameter value.
+* *pg_backend_pid()*; Return current PID.
+* *pg_cancel_backend(<PID>)*: Cancel backend session.
+* *pg_terminate_backend(<PID>)*: Kill backend session.
+* *txid_current()*: Return current TRX ID.
+* *version()*: Return postgres version.

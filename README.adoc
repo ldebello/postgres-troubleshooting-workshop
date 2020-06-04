@@ -1,12 +1,14 @@
 = Postgres Troubleshooting Workshop
 
-La idea de este workshop es proveer las herramientas necesarias para analizar los problemas que puedan aparecer en nuestras base de datos.
+The idea of this workshop is to provide all the necessary tools to analyze issues in our DBs. 
 
-== Introduccion
+*Note:* All this is based on PostgreSQL 9.6
 
-Para empezar a revisar los distintos temas debemos preparar nuestro ambiente.
+== Introduction
 
-1) Crear instancia
+We need to prepara our environment
+
+1) Create PostgreSQL instance.
 
 ```
 docker run -d \
@@ -18,16 +20,22 @@ docker run -d \
     postgres:9.6-alpine
 ``` 
 
-2) Configurar PAGER (psql)
+2) Configure PAGER (psql)
 
 export PAGER='/usr/bin/less -S'
 
-*Nota:* El pager es el programa que se encarga de mostrar los resultados de salida, con el parametro -S de less evitamos el line wrapping.
+*Note:* Pager is the program in charge of showing the query results, using -S from less we avoid line wrapping.
 
-3) Conectarnos
+3) Connect
 
 ```
 psql -h localhost -p 15432 -U postgres
+```
+
+4) Switch to workshop DB
+
+```
+\c workshop
 ```
 
 == Topics
@@ -36,3 +44,16 @@ psql -h localhost -p 15432 -U postgres
 * Catalogs
 ** link:topics/SystemViews.adoc[System Views]
 ** link:topics/SystemFunctions.adoc[System Functions]
+** link:topics/MVCC.adoc[MVCC]
+** link:topics/HOT.adoc[HOT]
+** link:topics/Vacuum.adoc[Vacuum]
+
+== References
+
+* https://www.postgresql.org/docs/9.6/
+* http://www.interdb.jp/pg/index.html
+* https://www.citusdata.com/blog/
+* https://devcenter.heroku.com/articles/postgresql-concurrency
+* https://github.com/heroku/heroku-pg-extras
+* https://vladmihalcea.com/how-does-mvcc-multi-version-concurrency-control-work/
+* https://habr.com/ru/company/postgrespro/blog/

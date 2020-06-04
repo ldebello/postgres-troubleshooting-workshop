@@ -1,0 +1,111 @@
+= VACUUM vs VACUUM FULL vs ANALYZE vs AUTOVACUUM
+
+== VACUUM
+
+* _VACUUM_ reclaims storage occupied by dead tuples from page tables and indexes.
+* When having frequents UPDATE/DELETE on our tables, it generates fragmentation and _VACUUM_ should be executed.
+* _VACUUM_ does not require an exclusive lock on the table.
+
+== VACUUM FULL
+
+* _VACUUM FULL_ is similar to _VACUUM_ but additionaly rewrites the entire table with data and releases all fragmented space of an old table.
+* We should avoid the _VACUUM FULL_ because it shrinks the whole table and writes everything into the new disk block which requires more resources and disk space to complete this operation.
+* _VACUUM FULL_ requires an exclusive lock on the table and also require a free disk space as same as your table size.
+
+== ANALYZE
+
+* _ANALYZE_ updates all require statistics and stores the results in the pg_statistic system catalog.
+
+* The Query Planner uses this database statistics information to prepare an efficient query execution plan.
+
+* We must execute _ANALYZE_ after execution of _VACUUM_ or _VACUUM FULL_.
+
+== AUTOVACUUM
+
+* When _AUTOVACUUM_ is turned on (SHOW autovacuum;), the *autovacuum launcher* daemon process is started, which plans the work. Vacuuming itself is done by autovacuum worker processes, several instances of which can run in parallel.
+* _AUTOVACUUM_ defines if __VACUUM_ or _ANALYZE_ should be run.
+* The maximum number of workers is defined by _autovacuum_max_workers_ (SHOW autovacuum_max_workers;)
+* The parameter _autovacuum_naptime_ defines the minimum delay between autovacuum runs.
+* This process evaluates if each table needs _AUTOVACUUM_ using the following parameters:
+** _autovacuum_vacuum_threshold_ and _autovacuum_analyze_threshold_: Defines an absolute value (the number of tuples).
+** _autovacuum_vacuum_scale_factor_ and _autovacuum_analyze_scale_factor_: Defines the share of rows in the table.
+
+== Hands On
+
+1) Create our model
+
+```
+DROP TABLE IF EXISTS vac;
+CREATE TABLE IF NOT EXISTS vac(id serial, data varchar(100)) WITH (autovacuum_enabled = off);
+CREATE INDEX IF NOT EXISTS vac_data ON vac(data);
+```
+
+=== Vacuum Basics
+
+1) Fill with sample data
+
+```
+INSERT INTO vac(data) VALUES ('A');
+UPDATE vac SET data = 'B';
+UPDATE vac SET data = 'C';
+```
+
+2) Check statistics
+
+```
+SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname='vac';
+```
+
+3) Run Vacuum
+
+```
+VACUUM vac;
+```
+
+4) Check statistics again
+
+```
+SELECT n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname='vac';
+```
+
+=== Vacuum and MVCC
+
+Vacuum can only remove tuples that are no longer viewable by any transaction, meaning long-running transactions, even idle ones, can stop autovacuuming entirely
+
+1) Fill with sample data
+
+```
+TRUNCATE vac;
+INSERT INTO vac(data) VALUES ('A');
+UPDATE vac SET data = 'B';
+```
+
+2) Open new session and start repeatable read transaction (TRX 1)
+
+```
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+```
+
+3) Select data (TRX 1)
+
+```
+SELECT * FROM vac;
+```
+
+4) Update data
+
+```
+UPDATE vac SET data = 'C';
+```
+
+5) Run Vacuum
+
+```
+VACUUM VERBOSE vac;
+```
+
+*Note:* Check the output and look for "1 dead row versions cannot be removed yet."
+
+6) Lesson Learned
+
+*Takeaway*: If a database has long-lived transactions (not completed or being performed really long), this can entail table bloat regardless of how often vacuuming happens.

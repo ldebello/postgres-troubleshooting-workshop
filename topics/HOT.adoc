@@ -1,0 +1,115 @@
+= HOT (Heap Only Tuples)
+
+This is a technique used to avoid updating our indexes all the time for tables with too many UPDATE operation.
+
+== Explanation
+
+1. Now imagine that, we have total 500 data pages and we are updating record of page number 3, but unfortunately new record insert in page number 500.
+
+2. It looks like very big internal fragmentation because of MVCC architecture. But actually this is not happening.
+
+3. PostgreSQL has a concept of HOT, With a HOT dead tuple space can be automatically reclaimed at the time of INSERT or UPDATE if *no changes are made to indexed columns*. This allows for more consistent performance.
+
+4. HOT means, creating a new update tuple if possible on the same page as the old tuple, and maintaining a chain of updated tuples linking a new version to the old tuple.
+
+5. HOT updates can only reuse dead tuples from previous transactions directly, not from the same or concurrent ones.
+If you have big updates, changing large portions of the table at once, you might want to split them up in a couple of chunks.
+
+6. *HOT updates only work when the changed columns are not involved in indexes in any way* because the indexes pointing the the old tuples need to point to the new version of it as of transaction id.
+
+7. You might be blocking HOT updates with indexes on updated columns. If those are expendable, you might get better overall performance without them.
+
+== Hands On
+
+1) Create our model
+
+```
+DROP TABLE IF EXISTS hot;
+CREATE TABLE IF NOT EXISTS hot(id int, data varchar(255));
+```
+
+2) Fill with sample data
+
+```
+INSERT INTO hot VALUES
+    (1, 'A'),
+    (2, 'B'),
+    (3, 'C'),
+    (4, 'D'),
+    (5, 'E'),
+    (6, 'F'),
+    (7, 'G'),
+    (8, 'H');
+```
+
+3) Delete data
+
+```
+DELETE FROM hot WHERE id = 7;
+```
+
+4) Insert new record
+
+```
+INSERT INTO hot VALUES (7,'I');
+```
+
+5) Check number of HOT update rows
+
+```
+SELECT pg_stat_get_tuples_hot_updated('hot'::regclass::oid);
+```
+
+6) Update record
+
+```
+UPDATE hot SET data = 'J' WHERE id=7;
+```
+
+7) Check again number of HOT update rows
+
+```
+SELECT pg_stat_get_tuples_hot_updated('hot'::regclass::oid);
+```
+
+8) Let's run more updates
+
+```
+UPDATE hot SET data = 'K' WHERE id=4;
+UPDATE hot SET data = 'L' WHERE id=8;
+```
+
+9) Check again number of HOT update rows
+
+```
+SELECT pg_stat_get_tuples_hot_updated('hot'::regclass::oid);
+```
+
+10) Create index
+
+```
+CREATE INDEX data_idx ON hot (data);
+```
+
+11) Let's run more updates
+
+```
+UPDATE hot SET data = 'N' WHERE id=3;
+UPDATE hot SET data = 'M' WHERE id=5;
+```
+
+12) Check again number of HOT update rows
+
+```
+SELECT pg_stat_get_tuples_hot_updated('hot'::regclass::oid);
+```
+
+== Additional notes
+
+Depending in the table and the percentage of HOT updates we can use different techniques.
+
+* High HOT Percentage: In this case we can modify the parameter _fillfactor_ which by default is 100% (Meaning the whole page will be used) and we can decrease this value to leave some free space in each page to allow store copy of the rows. 
+** This will increase the size of our tables in disk.
+** The _fillfactor_ will be take into account for new pages if we want to modify existing pages we need to execute _VACUUM FULL_
+
+* Low HOT Percentage: In this case we can check if our indexes are being used and drop the one which are not used.

@@ -1,9 +1,13 @@
 SELECT
-    pid,
-    usename,
-    pg_blocking_pids(pid) AS blocked_by,
-    query AS blocked_query
+    activity.pid,
+    activity.usename,
+    activity.query,
+    blocking.pid AS blocking_id,
+    blocking.state AS blocking_state,
+    CASE 
+        WHEN blocking.state='active' THEN blocking.query
+        ELSE ''
+    END AS blocking_query
 FROM 
-    pg_stat_activity
-WHERE 
-    cardinality(pg_blocking_pids(pid)) > 0;
+    pg_stat_activity AS activity JOIN 
+        pg_stat_activity AS blocking ON blocking.pid = ANY(pg_blocking_pids(activity.pid));

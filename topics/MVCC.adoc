@@ -1,0 +1,494 @@
+= MVCC (Multi-Version Concurrency Control)
+
+It is a model to deal with concurrency.
+
+== Introduction
+
+There are two ways you can deal with conflicts:
+
+1. You can avoid them, by employing a pessimistic locking mechanism (e.g. Read/Write locks, Two-Phase Locking)
+2. You can allow conflicts to occur, but you need to detect them using an optimistic locking mechanism (e.g. logical clock, MVCC)
+
+=== Two-Phase Locking
+
+There are two kind of locks _Shared Lock_ and _Exclusive Lock_.
+
+1. Shared Lock: Allow other _Shared Lock_ but block _Exclusive Lock_
+2. Exclusive Lock: Don't allow other _Shared Lock_ neither other _Exclusive Lock_
+
+[options="header"]
+|===
+|Lock Type|Read-Lock|Write-Lock
+|Read-Lock|Allow|Forbidden
+|Write-Lock|Forbidden|Forbidden
+|===
+
+=== MVCC
+
+Based on the fact Two-Phase Locking lead to high contention, database researchers have come up with a different Concurrency Control model which tries to reduce locking to a bare minimum so that.
+
+* Readers don’t block Writers
+* Writers don’t block Readers
+
+PostgreSQL implements this using two additional columns:
+
+* xmin: Contains the TRX ID which insert the row.
+* xmax: Contains the TRX ID which delete the row.
+
+== Hands On
+
+First we need to create our model.
+
+```
+CREATE TABLE IF NOT EXISTS numbers (value int);
+```
+
+=== MVCC Basics
+
+1) Clean up
+
+```
+TRUNCATE TABLE numbers;
+```
+
+2) Check current TRX ID.
+
+```
+SELECT txid_current();
+```
+
+*Note:* Each invocation will return a new value unless we are in a transaction.
+
+3) Insert data
+
+```
+INSERT INTO numbers VALUES (1);
+```
+
+4) Check transaction information
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+5) Lesson Learned
+
+*Takeaway*: PostgreSQL numbers every new transaction with an increasing identifier (txid). All rows in a table also have hidden columns (xmin, xmax) recording the minimum and maximum transaction ids which are permitted to see the row. You can imagine SELECT statements implicitly including WHERE xmin <= txid_current() AND (xmax = 0 OR txid_current() < xmax). Rows that no active or future transaction could ever see are considered “dead.” That means there are no active transactions with xmin ≤ txid < xmax.
+
+=== MVCC - Insert - Use Case 1
+
+There are two transactions: TRX 1 and TRX 2 where TRX 2 *_can_* see the commited values from TRX 1
+
+1) Clean up
+
+```
+TRUNCATE TABLE numbers;
+```
+
+2) Open session and start transaction (TRX 1)
+
+```
+BEGIN;
+```
+
+3) Open a new session and start transaction (TRX 2)
+
+```
+BEGIN;
+```
+
+4) Check current TRX ID (TRX 1)
+
+```
+SELECT txid_current();
+```
+
+5) Check current TRX ID (TRX 2)
+
+```
+SELECT txid_current();
+```
+
+6) Insert data (TRX 1)
+
+```
+INSERT INTO numbers VALUES (1);
+```
+
+7) Check transaction information (TRX 1)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+8) Check data (TRX 2)
+
+```
+SELECT * FROM numbers;
+```
+
+*Note:* We cannot see uncommited values.
+
+9) Commit data (TRX 1)
+
+```
+COMMIT;
+```
+
+10) Check transaction information (TRX 2)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* We *_can_* see commited values.
+
+11) Lesson Learned
+
+*Takeaway*: If the TRX Id is higher than the xmin value of the commited row, the transaction is allowed to read this record version.
+
+=== MVCC - Insert - Use Case 2
+
+There are two transactions: TRX 1 and TRX 2 where TRX 1 *_could_* see the commited values from TRX 2
+
+1) Clean up
+
+```
+TRUNCATE TABLE numbers;
+```
+
+2) Open session and start transaction (TRX 1)
+
+```
+BEGIN;
+```
+
+3) Open a new session and start transaction (TRX 2)
+
+```
+BEGIN;
+```
+
+4) Check current TRX ID (TRX 1)
+
+```
+SELECT txid_current();
+```
+
+5) Check current TRX ID (TRX 2)
+
+```
+SELECT txid_current();
+```
+
+6) Insert data (TRX 2)
+
+```
+INSERT INTO numbers VALUES (1);
+```
+
+7) Check transaction information (TRX 2)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+8) Check data (TRX 1)
+
+```
+SELECT * FROM numbers;
+```
+
+*Note:* We cannot see uncommited values.
+
+9) Commit data (TRX 2)
+
+```
+COMMIT;
+```
+
+10) Check transaction information (TRX 1)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* We *_could_* see commited values.
+
+11) Lesson Learned
+
+*Takeaway*: If the TRX Id is lower than the xmin value, then it’s up to the https://www.postgresql.org/docs/9.6/transaction-iso.html[isolation level] to decide if a record should be visible or not. 
+
+* READ COMMITTED: The currently executing statement timestamp becomes the lower boundary for row visibility.
+
+* REPEATABLE READ or SERIALIZABLE: All reads are relative to the start timestamp of the currently running transaction.
+
+By default PostgreSQL use _READ COMMITED_ as default isolation level
+
+=== MVCC - Delete - Use Case 1
+
+There are two transactions: TRX 1 and TRX 2 where TRX 2 *_will_* stop seeing row after deletion from TRX 1.
+
+1) Clean up
+
+```
+TRUNCATE TABLE numbers;
+```
+
+2) Open session and insert data
+
+```
+INSERT INTO numbers VALUES (1);
+```
+
+3) Start transaction (TRX 1)
+
+```
+BEGIN;
+```
+
+4) Open a new session and start transaction (TRX 2)
+
+```
+BEGIN;
+```
+
+5) Check current TRX ID (TRX 1)
+
+```
+SELECT txid_current();
+```
+
+6) Check current TRX ID (TRX 2)
+
+```
+SELECT txid_current();
+```
+
+7) Delete data (TRX 1)
+
+```
+DELETE FROM numbers;
+```
+
+8) Check transaction information (TRX 2)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* You can still see the values because TRX 1 was not comitted yet and can see the xmax
+
+9) Commit data (TRX 1)
+
+```
+COMMIT;
+```
+
+10) Check data (TRX 2)
+
+```
+SELECT * FROM numbers;
+```
+
+*Note:* We *_cannot_* see deleted rows because there were commited.
+
+11) Lesson Learned
+
+*Takeaway*: If the TRX Id is higher than the xmax value of the commited row, the transaction is not allowed to read this record version anymore.
+
+=== MVCC - Delete - Use Case 2
+
+There are two transactions: TRX 1 and TRX 2 where TRX 1 *_could_* continue seeing row after deletion from TRX 2.
+
+1) Clean up
+
+```
+TRUNCATE TABLE numbers;
+```
+
+2) Open session and insert data
+
+```
+INSERT INTO numbers VALUES (1);
+```
+
+3) Open a new session and start transaction (TRX 1)
+
+```
+BEGIN;
+```
+
+4) Start transaction (TRX 2)
+
+```
+BEGIN;
+```
+
+5) Check current TRX ID (TRX 1)
+
+```
+SELECT txid_current();
+```
+
+6) Check current TRX ID (TRX 2)
+
+```
+SELECT txid_current();
+```
+
+7) Delete data (TRX 1)
+
+```
+DELETE FROM numbers;
+```
+
+8) Check transaction informacion (TRX 2)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* You can still see the values because TRX 1 was not comitted yet and can see the xmax
+
+9) Commit data (TRX 1)
+
+```
+COMMIT;
+```
+
+10) Check data (TRX 2)
+
+```
+SELECT * FROM numbers;
+```
+
+*Note:* We *_could_* see deleted rows although there were commited.
+
+11) Lesson Learned
+
+*Takeaway*: If the TRX Id is lower than the xmax value,then it’s up to the isolation level to decide if a record should be visible or not.
+
+* READ COMMITTED: the currently executing statement timestamp becomes the lower boundary for row visibility.
+
+* REPEATABLE READ or SERIALIZABLE: All reads are relative to the start timestamp of the currently running transaction.
+
+=== MVCC - Update
+
+1) Clean up
+
+```
+TRUNCATE TABLE numbers;
+```
+
+2) Open session and insert data
+
+```
+INSERT INTO numbers VALUES (1);
+```
+
+3) Start transaction (TRX 1)
+
+```
+BEGIN;
+```
+
+4) Open a new session and start transaction (TRX 2)
+
+```
+BEGIN;
+```
+
+5) Check current TRX ID (TRX 1)
+
+```
+SELECT txid_current();
+```
+
+6) Check current TRX ID (TRX 2)
+
+```
+SELECT txid_current();
+```
+
+7) Update data (TRX 1)
+
+```
+UPDATE numbers SET value = 2;
+```
+
+8) Update data (TRX 2)
+
+```
+UPDATE numbers SET value = 3;
+```
+
+*Note:* Update will be blocked until TRX 1 commit.
+
+9) Open a new session and start transaction (TRX 3)
+
+```
+BEGIN;
+```
+
+10) Check data (TRX 3)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+11) Commit (TRX 1)
+
+```
+COMMIT;
+```
+
+12) Check data (TRX 2)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* You will see the latest value for this TRX (Value 3)
+
+13) Check data (TRX 3)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* You will see the latest commited value (Value 2).
+
+14) Commit (TRX 2)
+
+```
+COMMIT;
+```
+
+15) Check data (TRX 3)
+
+```
+SELECT xmin, xmax, value FROM numbers;
+```
+
+*Note:* You will see the latest commited value (Value 3).
+
+16) Lesson Learned
+
+*Takeaway*: When there is an update we can see two operations happening: a DELETE and an INSERT.
+
+1. The previous row version is marked as deleted by setting the xmax value to TRX ID which executed the deletion.
+
+2. A new row version is created which has the xmin value set to TRX ID which executed the deletion.
+
+== MVCC Disadvantages
+
+While the advantages of MVCC are clear it also has some disadvantages.
+
+1. Maintain potentially obsolete records, this is why an UPDATE actually creates a new row and why DELETE doesn’t really remove the row: it merely marks it as deleted and sets the XID values appropriately. As transactions complete, there will be rows in the database that cannot possibly be visible to any future transactions. These are called dead rows.
+
+2. Another problem that comes from MVCC is that transaction IDs can only ever grow so much – they are 32 bits and can “only” support around 4 billion transactions. When the XID reaches its max, it will wraparound and start back at zero. Suddenly all rows appear to be in future transactions, and no new transactions would have visibility into those rows.
+
+3. Maintain Indexes this is also related to DELETE strategy which lead to maintain multiples indexes entries for obsolete rows
+
+All these drawbacks are solved with _link:VacuumAnalyze.adoc[AUTOVACUUM]_ and Postgres comes with an auto_vacuum daemon that will run at a configurable frequency. Also use another technique called _link:HOT.adoc[HOT] (Heap Only Tuple)_ to deal cope with indexes in MVCC.
