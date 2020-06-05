@@ -5,7 +5,7 @@ Collection of multiples queries that may be useful when analyzing performance is
 `*link:blocking.sql[blocking]*`
 [options="nowrap"]
 ```
-pid | usename  |             query             | blocking_id |   blocking_state    |        blocking_query
+pid  | usename  |             query             | blocking_id |   blocking_state    |        blocking_query
 -----+----------+-------------------------------+-------------+---------------------+-------------------------------
   38 | postgres | UPDATE numbers SET value = 5; |          39 | idle in transaction | UPDATE numbers SET value = 4;
 (1 row)
@@ -18,7 +18,7 @@ This command displays statements that are currently holding locks that other sta
 `*link:locks.sql[locks]*`
 [options="nowrap"]
 ```
-pid | relname | transactionid | granted |         query_snippet         |       age
+pid  | relname | transactionid | granted |         query_snippet         |       age
 -----+---------+---------------+---------+-------------------------------+-----------------
   39 |         |         47203 | t       | UPDATE numbers SET value = 4; | 00:18:02.95436
   39 |         |               | t       | UPDATE numbers SET value = 4; | 00:18:02.95436
@@ -44,10 +44,24 @@ This command displays currently running queries, that have been running for long
 
 *Note:* We can also use its variants to detect long running transactions and long running connections. It is important because maybe our DB is performing but we are using very long transactions which could generate some contention on the DB. Its variant about long running connections allows us to detect long live backend process which would be top contributors about memory usage due to its internal caching.
 
+`*link:statements.sql[statements]*`
+[options="nowrap"]
+```
+                   query_snippet                    |   calls    |    total_time    |      mean       | percentage_cpu | sync_io_time
+----------------------------------------------------+------------+------------------+-----------------+----------------+--------------
+ SELECT * FROM numbers                              | 2928907107 | 470:05:44.191507 | 00:00:00.000578 |          69.90 | 00:00:00
+ SELECT * FROM vac                                  | 4514502866 | 49:08:01.929032  | 00:00:00.000039 |           7.31 | 00:00:00
+(2 rows)
+```
+
+This command displays statements, obtained from `pg_stat_statements`, ordered by the amount of time to execute in aggregate. This includes the statement itself, the total execution time for that statement, the proportion of total execution time for all statements that statement has taken up, the number of times that statement has been called, and the amount of time that statement spent on synchronous I/O (reading/writing from the filesystem), sync_io_time only is available when _track_io_timing_ is enabled (Off by default).
+
+*Note:* To use this query you have to configure the `pg_stat_statements` extension.
+
 `*link:duplicated-indexes.sql[duplicated-indexes]*`
 [options="nowrap"]
 ```
-   table     |     type      |                              indexes
+    table     |     type      |                              indexes
 --------------+---------------+-------------------------------------------------------------------
  vac          | Exact Match   | {vac_data,vac_data_duplicate}
  vac          | Partial Match | {vac_data,vac_data_duplicate,vac_data_multiple}
@@ -65,7 +79,7 @@ This command displays duplicated indexes using two strategies.
 `*link:unused-indexes.sql[unused-indexes]*`
 [options="nowrap"]
 ```
-     table       |                index                | index_size | index_scans
+      table       |                index                | index_size | index_scans
 ------------------+-------------------------------------+------------+-------------
  rental           | idx_fk_inventory_id                 | 496 kB     |           0
  payment          | idx_fk_staff_id                     | 464 kB     |           25
@@ -92,7 +106,7 @@ This command provides information on the efficiency of indexes, represented as w
 `*link:missing-indexes.sql[missing-indexes]*`
 [options="nowrap"]
 ```
-   table_name   | sequential_scans | indexes_scans | diff | table_size |   conclusion
+   table_name  | sequential_scans | indexes_scans | diff | table_size |   conclusion
 ---------------+------------------+---------------+------+------------+----------------
  numbers       |               52 |               |   52 | 8192 bytes | Missing Index?
  vac           |               41 |             6 |   35 | 8192 bytes | Missing Index?
@@ -172,7 +186,7 @@ This command displays all tables which has some specific configuration. Usually 
 `*link:connections.sql[connections]*`
 [options="nowrap"]
 ```
-client_addr | count
+ client_addr | count
 -------------+-------
  172.17.0.1  |     3
  172.17.0.2  |     7
@@ -186,7 +200,7 @@ This command displays number of connections per host. This is primarily useful f
 `*link:vacuum-stats.sql[vacuum-stats]*`
 [options="nowrap"]
 ```
-     table       | last_vacuum | last_autovacuum |    rowcount    | dead_rowcount  | autovacuum_threshold | expect_autovacuum
+      table       | last_vacuum | last_autovacuum |    rowcount    | dead_rowcount  | autovacuum_threshold | expect_autovacuum
 ------------------+-------------+-----------------+----------------+----------------+----------------------+-------------------
  example          |             |                 |            200 |              0 |             90       |
 (1 row)
@@ -197,7 +211,7 @@ This command displays statistics related to vacuum operations for each table, in
 `*link:bloat.sql[bloat]*`
 [options="nowrap"]
 ```
-type  | schemaname |                         object_name                         | bloat |   waste
+ type  | schemaname |                         object_name                         | bloat |   waste
 -------+------------+-------------------------------------------------------------+-------+------------
  table | public     | rental                                                      |   1.2 | 184 kB
  index | public     | film_actor::idx_fk_film_id                                  |   1.3 | 40 kB
