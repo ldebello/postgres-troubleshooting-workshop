@@ -1,19 +1,19 @@
 SELECT
-    'Database Hit Rate' AS name,
-    SUM(blks_hit) / NULLIF(SUM(blks_hit + blks_read),0) AS ratio 
+  'Database Hit Rate' AS name,
+  SUM(blks_hit) / NULLIF(SUM(blks_hit + blks_read),0) AS ratio 
 FROM
-    pg_stat_database
+  pg_stat_database
 WHERE 
-    datname = current_database()
+  datname = current_database()
 UNION ALL
 SELECT
-    'Index Hit Rate' AS name,
-    SUM(idx_blks_hit) / NULLIF(SUM(idx_blks_hit + idx_blks_read),0) AS ratio
+  'Index Hit Rate' AS name,
+  SUM(idx_blks_hit) / NULLIF(SUM(idx_blks_hit + idx_blks_read),0) AS ratio
 FROM 
-    pg_statio_user_indexes
+  pg_statio_user_indexes
 UNION ALL
 SELECT
-    'Table Hit Rate' AS name,
-    SUM(heap_blks_hit) / NULLIF(SUM(heap_blks_hit + heap_blks_read),0) AS ratio
+  'Table Hit Rate' AS name,
+  SUM(heap_blks_hit) / NULLIF(SUM(heap_blks_hit + heap_blks_read),0) AS ratio
 FROM 
-    pg_statio_user_tables;
+  pg_statio_user_tables;

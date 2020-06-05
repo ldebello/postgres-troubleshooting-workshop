@@ -1,8 +1,81 @@
 = Troubleshooting
 
-Collection of multiples queries that may be useful when analyzing performance issues. This includes information about locks, index usage, buffer cache hit ratios and vacuum statistics.
+Collection of multiples queries that may be useful when analyzing performance issues. This includes information about locks, index usage, buffer cache hit ratios , vacuum statistics, etc.
 
-`*cache-hit*`
+`*link:blocking.sql[blocking]*`
+[options="nowrap"]
+```
+pid | usename  |             query             | blocking_id |   blocking_state    |        blocking_query
+-----+----------+-------------------------------+-------------+---------------------+-------------------------------
+  38 | postgres | UPDATE numbers SET value = 5; |          39 | idle in transaction | UPDATE numbers SET value = 4;
+(1 row)
+```
+
+This command displays statements that are currently holding locks that other statements are waiting to be released. This can be used in conjunction with `*locks*` to determine which statements need to be terminated in order to resolve lock contention.
+
+*Note:* The column `blocking_query` could mean that the query is still running or that was the last query executed by the blocking pid. We need to check the column `blocking_state` to understand this, where _active_ means query still running.
+
+`*link:locks.sql[locks]*`
+[options="nowrap"]
+```
+pid | relname | transactionid | granted |         query_snippet         |       age
+-----+---------+---------------+---------+-------------------------------+-----------------
+  39 |         |         47203 | t       | UPDATE numbers SET value = 4; | 00:18:02.95436
+  39 |         |               | t       | UPDATE numbers SET value = 4; | 00:18:02.95436
+  38 | numbers |               | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
+  38 |         |         47204 | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
+  38 |         |               | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
+(5 rows)
+```
+
+This command displays queries that have taken out an exlusive lock on a relation. Exclusive locks typically prevent other operations on that relation from taking place, and can be a cause of "hung" queries that are waiting for a lock to be granted.
+
+`*link:long-running-queries.sql[long-running-queries]*`
+[options="nowrap"]
+```
+ pid |    duration     |             query             |        state
+-----+-----------------+-------------------------------+---------------------
+  39 | 00:33:13.750108 | UPDATE numbers SET value = 4; | idle in transaction
+  38 | 00:33:10.259885 | UPDATE numbers SET value = 5; | active
+(2 rows)
+```
+
+This command displays currently running queries, that have been running for longer than 5 seconds, descending by duration. Very long running queries can be a source of multiple issues, such as preventing DDL statements completing or vacuum being unable to update `relfrozenxid`.
+
+*Note:* We can also use its variants to detect long running transactions and long running connections. It is important because maybe our DB is performing but we are using very long transactions which could generate some contention on the DB. Its variant about long running connections allows us to detect long live backend process which would be top contributors about memory usage due to its internal caching.
+
+`*link:duplicated-indexes.sql[duplicated-indexes]*`
+[options="nowrap"]
+```
+   table     |     type      |                              indexes
+--------------+---------------+-------------------------------------------------------------------
+ vac          | Exact Match   | {vac_data,vac_data_duplicate}
+ vac          | Partial Match | {vac_data,vac_data_duplicate,vac_data_multiple}
+ pg_enum      | Partial Match | {pg_enum_typid_label_index,pg_enum_typid_sortorder_index}
+ pg_attribute | Partial Match | {pg_attribute_relid_attnam_index,pg_attribute_relid_attnum_index}
+(4 rows)
+```
+
+This command displays duplicated indexes using two strategies.
+
+1. Exact Match: In this case the index is using the same columns in the same order, so duplicated indexes could be removed.
+
+2. Partial Match: In this case the first component of the index is used in other index, we need to analyze if we can remove the other indexes. This can be used in conjunction with `*unused-indexes*`.
+
+`*link:unused-indexes.sql[unused-indexes]*`
+[options="nowrap"]
+```
+     table       |                index                | index_size | index_scans
+------------------+-------------------------------------+------------+-------------
+ rental           | idx_fk_inventory_id                 | 496 kB     |           0
+ payment          | idx_fk_staff_id                     | 464 kB     |           25
+ payment          | idx_fk_customer_id                  | 368 kB     |           1
+(3 rows)
+```
+
+This command displays indexes that have < 50 scans recorded against them, and are greater than 5 pages in size, ordered by index size. This command is generally useful for eliminating indexes that are unused, which can impact write performance, as well as read performance should they occupy space in memory.
+
+`*link:cache-hit.sql[cache-hit]*`
 [options="nowrap"]
 ```
        name        |         ratio
@@ -15,7 +88,37 @@ Collection of multiples queries that may be useful when analyzing performance is
 
 This command provides information on the efficiency of the buffer cache, for both index reads (index hit rate) as well as table reads (table hit rate). A low buffer cache hit ratio can be a sign that the DB is too small for the workload.
 
-`*vacuum-stats*`
+`*link:size-information.sql[size-information]*`
+[options="nowrap"]
+```
+      table       | row_estimate | table_size | index_size | toast_size | total_size
+------------------+--------------+------------+------------+------------+------------
+ rental           |        16044 | 1224 kB    | 1480 kB    |            | 2704 kB
+ payment          |        16049 | 976 kB     | 1200 kB    |            | 2176 kB
+ film             |         1000 | 464 kB     | 272 kB     | 8192 bytes | 744 kB
+ film_actor       |         5462 | 264 kB     | 312 kB     |            | 576 kB
+ inventory        |         4581 | 224 kB     | 280 kB     |            | 504 kB
+ customer         |          599 | 96 kB      | 144 kB     |            | 240 kB
+ (6 rows)
+```
+
+This command displays the total size of each table which include _table size_ + _index size_ + _toast size_.
+
+`*link:connections.sql[connections]*`
+[options="nowrap"]
+```
+client_addr | count
+-------------+-------
+ 172.17.0.1  |     3
+ 172.17.0.2  |     7
+(2 rowS)
+```
+
+This command displays number of connections per host. This is primarily useful for determining if a specific host is consuming many more connections than expected.
+
+*Note:* This can be a little tricky if multiples instances use the same IP, for example in kubernetes environment several pod could be running in the same node and connecting from the same IP.
+
+`*link:vacuum-stats.sql[vacuum-stats]*`
 [options="nowrap"]
 ```
      table       | last_vacuum | last_autovacuum |    rowcount    | dead_rowcount  | autovacuum_threshold | expect_autovacuum
@@ -24,39 +127,18 @@ This command provides information on the efficiency of the buffer cache, for bot
 (1 row)
 ```
 
+This command displays statistics related to vacuum operations for each table, including an estiamtion of dead rows, last autovacuum and the current autovacuum threshold. This command can be useful when determining if current vacuum thresholds require adjustments, and to determine when the table was last vacuumed.
 
+`*link:bloat.sql[bloat]*`
+[options="nowrap"]
+```
+type  | schemaname |                         object_name                         | bloat |   waste
+-------+------------+-------------------------------------------------------------+-------+------------
+ table | public     | rental                                                      |   1.2 | 184 kB
+ index | public     | film_actor::idx_fk_film_id                                  |   1.3 | 40 kB
+ index | public     | inventory::idx_store_id_film_id                             |   1.3 | 32 kB
+ table | public     | film_actor                                                  |   1.1 | 24 kB
+ (4 rows)
+```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-* link:show_autovacuum.sql[Show Autovacuum]
-* link:show_blocked_queries.sql[Show Blocked Queries]
-* link:show_connections_per_host.sql[Show Connections Per Host]
-* link:show_cpu_usage_per_query.sql[Show CPU Usage Per Query]
-* link:show_db_stats.sql[Show DB Stats]
-* link:show_duplicated_indexes.sql[Show Duplicated Indexes]
-* link:show_indexes_percentage_used.sql[Show Indexes Percentage Used]
-* link:show_invalid_indexes.sql[Show Invalid Indexes]
-* link:show_io_statistics.sql[Show IO Statistics]
-* link:show_locks.sql[Show Locks]
-* link:show_long_running_connections.sql[Show Long Running Connections]
-* link:show_long_running_queries.sql[Show Long Running Queries]
-* link:show_long_running_transactions.sql[Show Long Running Transactions]
-* link:show_missing_indexes.sql[Show Missing Indexes]
-* link:show_pg_stat_statements.sql[Show pg_stat_statements]
-* link:show_size_information.sql[Show Size Information]
-* link:show_table_specific_configurations.sql[Show Table Configurations]
-* link:show_table_statistics.sql[Show Table Statistics]
-* link:show_total_ratio_per_index.sql[Show Ratio Per Index]
-* link:show_unused_indexes.sql[Show Unused Indexes]
-* link:show_wait_events.sql[Show Wait Events]
+This command displays an estimation of table "bloat" – space allocated to a relation that is full of dead tuples, that has yet to be reclaimed. Tables that have a high bloat ratio, typically 10 or greater, should be investigated to see if vacuuming is aggressive enough, and can be a sign of high table churn.

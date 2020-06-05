@@ -47,6 +47,7 @@ psql -h localhost -p 15432 -U postgres
 * link:topics/MVCC.adoc[MVCC]
 * link:topics/HOT.adoc[HOT]
 * link:topics/Vacuum.adoc[Vacuum]
+* link:troubleshooting/README.adoc[Troubleshooting]
 
 == References
 
