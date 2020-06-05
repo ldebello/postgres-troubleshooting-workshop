@@ -1,6 +1,6 @@
 SELECT
   pid,
-  now() - pg_stat_activity.query_start AS duration,
+  age(now(), pg_stat_activity.query_start) AS duration,
   query,
   state
 FROM 

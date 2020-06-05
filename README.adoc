@@ -17,7 +17,8 @@ docker run -d \
     -e POSTGRES_PASSWORD=password \
     -e POSTGRES_DB=workshop \
     -v $(pwd)/sakila:/docker-entrypoint-initdb.d \
-    postgres:9.6-alpine
+    postgres:9.6-alpine \
+    -c 'shared_preload_libraries=pg_stat_statements'
 ``` 
 
 2) Configure PAGER (psql)
@@ -47,6 +48,7 @@ psql -h localhost -p 15432 -U postgres
 * link:topics/MVCC.adoc[MVCC]
 * link:topics/HOT.adoc[HOT]
 * link:topics/Vacuum.adoc[Vacuum]
+* link:topics/Explain.adoc[Explain]
 * link:troubleshooting/README.adoc[Troubleshooting]
 
 == References
@@ -55,6 +57,7 @@ psql -h localhost -p 15432 -U postgres
 * http://www.interdb.jp/pg/index.html
 * https://www.citusdata.com/blog/
 * https://devcenter.heroku.com/articles/postgresql-concurrency
+* https://thoughtbot.com/blog/reading-an-explain-analyze-query-plan
 * https://github.com/heroku/heroku-pg-extras
 * https://vladmihalcea.com/how-does-mvcc-multi-version-concurrency-control-work/
 * https://habr.com/ru/company/postgrespro/blog/

@@ -56,7 +56,7 @@ This command displays currently running queries, that have been running for long
 
 This command displays statements, obtained from `pg_stat_statements`, ordered by the amount of time to execute in aggregate. This includes the statement itself, the total execution time for that statement, the proportion of total execution time for all statements that statement has taken up, the number of times that statement has been called, and the amount of time that statement spent on synchronous I/O (reading/writing from the filesystem), sync_io_time only is available when _track_io_timing_ is enabled (Off by default).
 
-*Note:* To use this query you have to configure the `pg_stat_statements` extension.
+*Note:* To use this query you have to configure the https://www.postgresql.org/docs/9.6/pgstatstatements.html[pg_stat_statements] extension.
 
 `*link:duplicated-indexes.sql[duplicated-indexes]*`
 [options="nowrap"]

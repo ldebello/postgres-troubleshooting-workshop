@@ -1,0 +1,167 @@
+= EXPLAIN
+:toc: macro
+:sectnumlevels: 4
+
+We use _EXPLAIN_ to understand the query plan from our queries, these plans are build based on the DB stats. _EXPLAIN_ supports multiples https://www.postgresql.org/docs/9.6/sql-explain.html[options] it is important to remember the option _ANALYZE_ is a profiler and execute the query against the DB so it has impact in performance.
+
+toc::[]
+== Hands On
+
+Postgres builds a tree structure of plan nodes representing the different actions taken, with the root and each -> pointing to one of them. In some cases EXPLAIN ANALYZE provides additional execution statistics beyond the execution times and row counts, such as Sort and Hash above. Any line other than the first without an -> is such information, so the structure of the query is:
+
+```
+Sort
+└── Hash Join
+    ├── Seq Scan
+    └── Hash
+        └── Bitmap Heap Scan
+            └── Bitmap Index Scan
+```
+
+Each tree’s branches represent sub-actions, and you’d work inside-out to determine what’s happening “first” (though the order of nodes at the same level could be different).
+
+=== Basic Understanding
+
+1) Execute query
+
+```
+SELECT * FROM film;
+```
+
+2) Analyze query
+
+```
+EXPLAIN SELECT * FROM film;
+```
+
+3) Understand query plan
+
+[options="nowrap"]
+```
+                        QUERY PLAN
+----------------------------------------------------------
+ Seq Scan on film  (cost=0.00..65.00 rows=1000 width=386)
+(1 row)
+```
+
+From the above query plan we can learn a couple of things.
+
+1. Seq Scan: Meaning there will be full scan in the table `film`
+2. Estimate Cost: `0.00..65.00` Those are the estimate cost as initial cost and final cost.
+3. Rows: Estimate number of rows.
+4. width: Estimate size in bytes of the returned rows.
+
+We can compute the cost in the following way:
+
+`COST (disk pages read * seq_page_cost) + (rows scanned * cpu_tuple_cost)`
+
+Lets do some math
+
+[options="nowrap"]
+```
+SELECT 
+    relpages AS "Disk Page Read",
+    reltuples AS "Rows Scanned"
+FROM 
+    pg_class 
+WHERE 
+    relname = 'film';
+
+Disk Page Read | Rows Scanned
+----------------+--------------
+             55 |         1000
+(1 row)
+```
+
+Relative cost of accesing a page
+[options="nowrap"]
+```
+SHOW seq_page_cost;
+
+ seq_page_cost
+---------------
+ 1
+(1 row)
+```
+
+Relative cost of processing a row
+[options="nowrap"]
+```
+SHOW cpu_tuple_cost;
+
+ cpu_tuple_cost
+----------------
+ 0.01
+(1 row)
+```
+
+=== Seq Scan Vs Index Scan
+
+1) Check indexes
+
+```
+\d film
+```
+
+*Note:* Check the column `film_id` is the primary key and has a btree index.
+
+2) Understand query plan 1
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE film_id < 40;
+
+                                QUERY PLAN
+--------------------------------------------------------------------------
+ Index Scan using film_pkey on film  (cost=0.28..11.11 rows=40 width=386)
+   Index Cond: (film_id < 40)
+(2 rows)
+```
+
+*Analysis:* In this case the query planner decided to do an index scan using `film_pkey` applying the condition over the index, this lead to a lower cost.
+
+3) Understand query plan 2
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE film_id > 40;
+
+                       QUERY PLAN
+---------------------------------------------------------
+ Seq Scan on film  (cost=0.00..67.50 rows=960 width=386)
+   Filter: (film_id > 40)
+(2 rows)
+```
+
+*Analysis:* If we remember the total cost from our previous lab `0.00..65.00` it could sound weird that now we are fetching less rows but having a higher cost, this is due to because we are fetching 1000 rows and later applying a filter.
+
+4) Why different plans?
+
+It could some weird that when doing a query using an indexed field the planner decided to do a _Seq Scan_ rather than an _Index Scan_ this is due to the planner understand that the second query is going to fetch several rows so it will have to fetch several pages no matter if using the index or not.
+
+5) Additional conditions
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE film_id < 40 AND rating = 'PG-13';
+
+                               QUERY PLAN
+-------------------------------------------------------------------------
+ Index Scan using film_pkey on film  (cost=0.28..11.21 rows=9 width=386)
+   Index Cond: (film_id < 40)
+   Filter: (rating = 'PG-13'::mpaa_rating)
+(3 rows)
+```
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE film_id > 40 AND rating = 'PG-13';
+
+                           QUERY PLAN
+----------------------------------------------------------------
+ Seq Scan on film  (cost=0.00..70.00 rows=214 width=386)
+   Filter: ((film_id > 40) AND (rating = 'PG-13'::mpaa_rating))
+(2 rows)
+```
+
+*Analysis:* If we check the first plan we will see the index is still used and the filter is applied over the result after using the _Index Scan_. In the second case the plan remains very similar to the original but adding some extra condition to the filter clause.
