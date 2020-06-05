@@ -75,14 +75,55 @@ This command displays duplicated indexes using two strategies.
 
 This command displays indexes that have < 50 scans recorded against them, and are greater than 5 pages in size, ordered by index size. This command is generally useful for eliminating indexes that are unused, which can impact write performance, as well as read performance should they occupy space in memory.
 
+`*link:index-usage.sql[index-usage]*`
+[options="nowrap"]
+```
+  table   | usage_percentage | estime_rows
+----------+------------------+-------------
+ film     |               99 |        1000
+ category |               99 |          16
+ language |               99 |           6
+ vac      |               12 |           1
+(4 rows)
+```
+
+This command provides information on the efficiency of indexes, represented as what percentage of total scans were index scans. A low percentage can indicate under indexing, or wrong data being indexed.
+
+`*link:missing-indexes.sql[missing-indexes]*`
+[options="nowrap"]
+```
+   table_name   | sequential_scans | indexes_scans | diff | table_size |   conclusion
+---------------+------------------+---------------+------+------------+----------------
+ numbers       |               52 |               |   52 | 8192 bytes | Missing Index?
+ vac           |               41 |             6 |   35 | 8192 bytes | Missing Index?
+ hot           |                7 |             0 |    7 | 8192 bytes | Missing Index?
+ film          |               10 |          1000 | -990 | 440 kB     | OK
+ (4 rows)
+```
+
+This command displays tables which could be missing and index this is infer based on the number of sequential scans.
+
+`*link:invalid-indexes.sql[invalid-indexes]*`
+[options="nowrap"]
+```
+index_name
+------------
+(0 rows)
+```
+
+This command show any invalid index, an index could be invalid due to an error during its creation, for example when using _CREATE INDEX CONCURRENTLY_. In order to rebuild invalid indexes we have two choices:
+
+* Use the REINDEX command (*not suggested*)
+* Drop the index and try to re-build it again (*suggested*)
+
 `*link:cache-hit.sql[cache-hit]*`
 [options="nowrap"]
 ```
-       name        |         ratio
--------------------+------------------------
- Database Hit Rate | 0.99295247815144368919
- Index Hit Rate    | 0.99797141288561649969
- Table Hit Rate    | 0.98660064083891639965
+       name        | block_read | block_hit |         ratio
+-------------------+------------+-----------+------------------------
+ Database Hit Rate |       3713 |    508746 | 0.99275454231460468057
+ Index Hit Rate    |        543 |    256365 | 0.99788640291466205801
+ Table Hit Rate    |        836 |     57765 | 0.98573403184246002628
 (3 rows)
 ```
 
@@ -103,6 +144,30 @@ This command provides information on the efficiency of the buffer cache, for bot
 ```
 
 This command displays the total size of each table which include _table size_ + _index size_ + _toast size_.
+
+`*link:db-stats.sql[db-stats]*`
+[options="nowrap"]
+```
+ datname  | commit_ratio | rollback_ratio | deadlocks | conflicts | temp_files | db_size
+----------+--------------+----------------+-----------+-----------+------------+---------
+ postgres |           99 |              0 |         0 |         0 |          0 | 7071 kB
+ workshop |           99 |              0 |         0 |         0 |          0 | 15 MB
+(2 rows)
+```
+
+This command displays useful stats from our DBs, we want to have a low number of _temp_files_ and no _deadlocks_ or near to zero. One important thing to remember this stats are accumulative so if you want to reset them you need to execute _`SELECT pg_stat_reset();`_
+
+`*link:table-configurations.sql[table-configurations]*`
+[options="nowrap"]
+```
+  table   |         options
+----------+--------------------------
+ vac      | {autovacuum_enabled=off}
+ pg_stats | {security_barrier=true}
+(2 rows)
+```
+
+This command displays all tables which has some specific configuration. Usually this is useful to check if some table is overriding some specific config which could affect the behaviour of background processes like _AUTOVACUUM_.
 
 `*link:connections.sql[connections]*`
 [options="nowrap"]

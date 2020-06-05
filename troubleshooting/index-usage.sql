@@ -1,7 +1,7 @@
 SELECT 
-  relname,
-  100 * idx_scan / (seq_scan + idx_scan) percent_of_times_index_used, 
-  n_live_tup estime_rows
+  relname AS table,
+  100 * idx_scan / (seq_scan + idx_scan) AS usage_percentage, 
+  n_live_tup AS estime_rows
 FROM
   pg_stat_user_tables
 WHERE
