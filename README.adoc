@@ -48,6 +48,7 @@ psql -h localhost -p 15432 -U postgres
 * link:topics/MVCC.adoc[MVCC]
 * link:topics/HOT.adoc[HOT]
 * link:topics/Vacuum.adoc[Vacuum]
+* link:topics/Indexes.adoc[Indexes]
 * link:topics/Explain.adoc[Explain]
 * link:troubleshooting/README.adoc[Troubleshooting]
 
@@ -56,8 +57,13 @@ psql -h localhost -p 15432 -U postgres
 * https://www.postgresql.org/docs/9.6/
 * http://www.interdb.jp/pg/index.html
 * https://www.citusdata.com/blog/
+* https://use-the-index-luke.com/
+* https://pganalyze.com/docs
+* https://severalnines.com/database-blog/postgresql
+* http://morningcoffee.io/the-postgresql-query-cost-model.html
 * https://devcenter.heroku.com/articles/postgresql-concurrency
 * https://thoughtbot.com/blog/reading-an-explain-analyze-query-plan
 * https://github.com/heroku/heroku-pg-extras
 * https://vladmihalcea.com/how-does-mvcc-multi-version-concurrency-control-work/
 * https://habr.com/ru/company/postgrespro/blog/
+* https://www.pluralsight.com/courses/postgresql-index-tuning-performance-optimization

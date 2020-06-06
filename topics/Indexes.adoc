@@ -1,0 +1,10 @@
+= Indexes
+
+Indexes allows us to improve the performance of our queries. Depending on the types of queries we can use indexes of different types. On the other side too many indexes could generate slow DML queries (INSERT, UPDATE, DELETE).
+
+== Types
+
+* B-Tree (Balance Tree): It is useful for equality (<, <=, =, >=, >) or range (BETWEEN, IN) operators. It is the default index type.
+* Hash: It is useful only for equality comparison.
+* GIN (Generalized Inverted Index): It is useful when working full text search.
+* GiST (Generalized Search Tree Index): It is useful when working with geometry data and full text search.

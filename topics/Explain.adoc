@@ -53,7 +53,7 @@ From the above query plan we can learn a couple of things.
 
 We can compute the cost in the following way:
 
-`COST (disk pages read * seq_page_cost) + (rows scanned * cpu_tuple_cost)`
+`Cost = (disk pages read * seq_page_cost) + (rows scanned * cpu_tuple_cost)`
 
 Lets do some math
 
@@ -95,6 +95,14 @@ SHOW cpu_tuple_cost;
 (1 row)
 ```
 
+Cost = (55 * 1) + (1000 * 0.01) = 55 + 10 = 65
+
+*Note:* There are other relative costs that the query planner use when computing the final cost.
+
+* Indexes related: _random_page_cost_ (Random Access), _cpu_index_tuple_cost_ (Processing Rows)
+* Parallel worker related: _parallel_tuple_cost_ (Transfer tuples to other worker), _parallel_setup_cost_ (Start new worker)
+* Filter related: _cpu_operator_cost_ (Processing each operator or function)
+
 === Seq Scan Vs Index Scan
 
 1) Check indexes
@@ -135,6 +143,25 @@ EXPLAIN SELECT * FROM film WHERE film_id > 40;
 
 *Analysis:* If we remember the total cost from our previous lab `0.00..65.00` it could sound weird that now we are fetching less rows but having a higher cost, this is due to because we are fetching 1000 rows and later applying a filter.
 
+We can compute the extra cost, using the value of _cpu_operator_cost_
+
+[options="nowrap"]
+```
+SHOW cpu_operator_cost;
+
+ cpu_operator_cost
+-------------------
+ 0.0025
+(1 row)
+```
+
+```
+Cost = Seq Scan Cost + Filter Cost
+Cost = 65 + (1000 * 0.0025)
+Cost = 65 + 2.5
+Cost = 67.5
+```
+
 4) Why different plans?
 
 It could some weird that when doing a query using an indexed field the planner decided to do a _Seq Scan_ rather than an _Index Scan_ this is due to the planner understand that the second query is going to fetch several rows so it will have to fetch several pages no matter if using the index or not.
@@ -165,3 +192,261 @@ EXPLAIN SELECT * FROM film WHERE film_id > 40 AND rating = 'PG-13';
 ```
 
 *Analysis:* If we check the first plan we will see the index is still used and the filter is applied over the result after using the _Index Scan_. In the second case the plan remains very similar to the original but adding some extra condition to the filter clause.
+
+=== Analyze
+
+1) Understand explain options
+
+[options="nowrap"]
+```
+EXPLAIN (ANALYZE, VERBOSE, BUFFERS) SELECT * FROM film WHERE film_id > 40;
+
+                QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on public.film  (cost=0.00..67.50 rows=960 width=386) (actual time=0.027..0.265 rows=960 loops=1)
+   Output: film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update, special_features, fulltext
+   Filter: (film.film_id > 40)
+   Rows Removed by Filter: 40
+   Buffers: shared hit=55
+ Planning time: 0.117 ms
+ Execution time: 0.370 ms
+(7 rows)
+```
+
+We have multiples options for _EXPLAIN_:
+
+* ANALYZE: Carry out the command and show actual run times and other statistics.
+* VERBOSE: Display additional information regarding the plan.
+* BUFFERS: Show buffers usage (Hit means read from buffer, Read means read from disk).
+
+=== Indexes
+
+1) Analyze query
+
+[options="nowrap"]
+```
+EXPLAIN ANALYSE SELECT title, length FROM film WHERE length = 60;
+
+                                           QUERY PLAN
+------------------------------------------------------------------------------------------------
+ Seq Scan on film  (cost=0.00..67.50 rows=6 width=17) (actual time=0.038..0.274 rows=8 loops=1)
+   Filter: (length = 60)
+   Rows Removed by Filter: 992
+ Planning time: 0.100 ms
+ Execution time: 0.287 ms
+(6 rows)
+```
+
+2) Create index
+
+[options="nowrap"]
+```
+CREATE INDEX IF NOT EXISTS idx_film_length ON film (length);
+```
+
+3) Analyze query
+
+[options="nowrap"]
+```
+EXPLAIN ANALYSE SELECT title, length FROM film WHERE length = 60;
+
+                                                       QUERY PLAN
+------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=4.32..22.45 rows=6 width=17) (actual time=0.025..0.036 rows=8 loops=1)
+   Recheck Cond: (length = 60)
+   Heap Blocks: exact=8
+   ->  Bitmap Index Scan on idx_film_length  (cost=0.00..4.32 rows=6 width=0) (actual time=0.018..0.018 rows=8 loops=1)
+         Index Cond: (length = 60)
+ Planning time: 0.268 ms
+ Execution time: 0.054 ms
+(9 rows)
+```
+
+*Analysis:* Maybe we were expecting to see an _Index Scan_ but we found a _Bitmap Index Scan_, we can think of a bitmap index scan as a middle ground between a sequential scan and an index scan.
+
+[options="header"]
+|===
+|Type|Index Scan|Bitmap Index Scan
+|Operation|Index scan reads the index in alternation, bouncing between table and index, row at a time.|Scans all index rows before examining base table.This populates a TID (Tuple Identifier) bitmap. TID is 6 bytes number which consists of two parts. The first part is 4-byte page number and remaining 2 bytes tuple index inside the page. The combination of these two numbers uniquely points to the storage location for a particular tuple
+|Scan Property|Random I/O against the base table. Read a row from the index, then a row from the table, and so on.|Table I/O is sequential, results in physical order.
+|===
+
+After building our bitmap _Bitmap Heap Scan_ will looks up the relevant data. Each chunk of a bitmap can either be exact (pointing directly to rows) or lossy (pointing to a page containing at least one row matching the predicate).
+Postgres prefers using exact blocks, but if limited `work_mem (SHOW work_mem)` is an issue, it will start using lossy blocks as well. 
+
+4) Drop index
+
+[options="nowrap"]
+```
+DROP INDEX IF EXISTS idx_film_length;
+```
+
+=== Multicolumn Indexes
+
+In some scenarios we could want to create an index compose of multiples columns, we need to remember the following:
+
+* Maximun 32 columns
+* Column order matter (Leading column constraint)
+* Usually multiples single indexes work better (Run performance)
+
+1) Analyze query
+
+[options="nowrap"]
+```
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
+FROM film
+WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+
+                                            QUERY PLAN
+--------------------------------------------------------------------------------------------------
+ Seq Scan on film  (cost=0.00..72.50 rows=13 width=34) (actual time=0.032..0.362 rows=18 loops=1)
+   Filter: ((length >= 60) AND (length <= 70) AND (rating = 'G'::mpaa_rating))
+   Rows Removed by Filter: 982
+ Planning time: 0.122 ms
+ Execution time: 0.378 ms
+(5 rows)
+```
+
+2) Create single column index and re-execute query
+
+[options="nowrap"]
+```
+CREATE INDEX IF NOT EXISTS idx_film_length ON film (length);
+
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
+FROM film
+WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+
+                                                        QUERY PLAN
+-------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=4.99..64.17 rows=13 width=34) (actual time=0.045..0.101 rows=18 loops=1)
+   Recheck Cond: ((length >= 60) AND (length <= 70))
+   Filter: (rating = 'G'::mpaa_rating)
+   Rows Removed by Filter: 59
+   Heap Blocks: exact=41
+   ->  Bitmap Index Scan on idx_film_length  (cost=0.00..4.99 rows=71 width=0) (actual time=0.027..0.027 rows=77 loops=1)
+         Index Cond: ((length >= 60) AND (length <= 70))
+ Planning time: 0.313 ms
+ Execution time: 0.122 ms
+(9 rows)
+```
+
+3) Create multi column index and re-execute query
+
+[options="nowrap"]
+```
+CREATE INDEX IF NOT EXISTS idx_film_length_rating ON film (length,rating);
+
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
+FROM film
+WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+
+                                                           QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=5.17..36.58 rows=13 width=34) (actual time=0.044..0.089 rows=18 loops=1)
+   Recheck Cond: ((length >= 60) AND (length <= 70) AND (rating = 'G'::mpaa_rating))
+   Heap Blocks: exact=14
+   ->  Bitmap Index Scan on idx_film_length_rating  (cost=0.00..5.16 rows=13 width=0) (actual time=0.035..0.035 rows=18 loops=1)
+         Index Cond: ((length >= 60) AND (length <= 70) AND (rating = 'G'::mpaa_rating))
+ Planning time: 0.274 ms
+ Execution time: 0.122 ms
+(7 rows)
+```
+
+4) Order matters
+
+The most important consideration when defining a concatenated index is how to choose the column order so it can be used as often as possible.
+
+[options="nowrap"]
+```
+DROP INDEX IF EXISTS idx_film_length;
+CREATE INDEX IF NOT EXISTS idx_film_length_rating ON film (length,rating);
+```
+
+Lets compare the query plan for the following queries:
+
+[options="nowrap"]
+```
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
+FROM film
+WHERE length BETWEEN 60 AND 70;
+
+                                                           QUERY PLAN
+---------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=5.00..64.00 rows=71 width=34) (actual time=0.037..0.100 rows=77 loops=1)
+   Recheck Cond: ((length >= 60) AND (length <= 70))
+   Heap Blocks: exact=41
+   ->  Bitmap Index Scan on idx_film_length_rating  (cost=0.00..4.99 rows=71 width=0) (actual time=0.027..0.027 rows=77 loops=1)
+         Index Cond: ((length >= 60) AND (length <= 70))
+ Planning time: 0.410 ms
+ Execution time: 0.128 ms
+(7 rows)
+```
+
+[options="nowrap"]
+```
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
+FROM film
+WHERE rating = 'G';
+
+                                             QUERY PLAN
+----------------------------------------------------------------------------------------------------
+ Seq Scan on film  (cost=0.00..67.50 rows=178 width=34) (actual time=0.011..0.336 rows=178 loops=1)
+   Filter: (rating = 'G'::mpaa_rating)
+   Rows Removed by Filter: 822
+ Planning time: 0.119 ms
+ Execution time: 0.358 ms
+(5 rows)
+```
+
+*Analysis:* In the first case the index can be used because we are filtering by the first column of the index but in the second case this is not possible because the index requires first filtering by _length_ and we are not using _length_ in our where clause.
+
+5) Compare with two single indexes
+
+[options="nowrap"]
+```
+DROP INDEX IF EXISTS idx_film_length;
+DROP INDEX IF EXISTS idx_film_rating;
+DROP INDEX IF EXISTS idx_film_length_rating;
+
+CREATE INDEX IF NOT EXISTS idx_film_length ON film (length);
+CREATE INDEX IF NOT EXISTS idx_film_rating ON film (rating);
+
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
+FROM film
+WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+
+                                                            QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=10.85..42.26 rows=13 width=34) (actual time=0.082..0.100 rows=18 loops=1)
+   Recheck Cond: ((length >= 60) AND (length <= 70) AND (rating = 'G'::mpaa_rating))
+   Heap Blocks: exact=14
+   ->  BitmapAnd  (cost=10.85..10.85 rows=13 width=0) (actual time=0.075..0.075 rows=0 loops=1)
+         ->  Bitmap Index Scan on idx_film_length  (cost=0.00..4.99 rows=71 width=0) (actual time=0.029..0.029 rows=77 loops=1)
+               Index Cond: ((length >= 60) AND (length <= 70))
+         ->  Bitmap Index Scan on idx_film_rating  (cost=0.00..5.61 rows=178 width=0) (actual time=0.040..0.040 rows=178 loops=1)
+               Index Cond: (rating = 'G'::mpaa_rating)
+ Planning time: 0.272 ms
+ Execution time: 0.135 ms
+(10 rows)
+```
+
+*Analysis:* In this case we can confirm a single index in both column perform worst for this particular query.
+
+We can use this query plan to understand more about _BitmapAnd_ and _BitmapOr_.
+
+* BitmapAnd: Generate a bitmap of the intersection of two physical row location bitmaps (that is, only locations that occur in both bitmaps). The bitmaps can come from Bitmap Index Scans or other BitmapOr or BitmapAnd child nodes.
+* BitmapOr: Generate a bitmap of the union of two physical row location bitmaps (that is, locations that occur in either bitmap). The bitmaps can come from Bitmap Index Scans or other BitmapOr or BitmapAnd child nodes.
+
+In both cases due to internal implementation limitations, these nodes do not track the number of rows they produce. Their row count will always be listed as "Unknown" (0) and they will not be flagged as mis-estimates.
+
+6) Clean up
+
+[options="nowrap"]
+```
+DROP INDEX IF EXISTS idx_film_length;
+DROP INDEX IF EXISTS idx_film_rating;
+DROP INDEX IF EXISTS idx_film_length_rating;
+DROP INDEX IF EXISTS idx_film_rating_length;
+DROP INDEX IF EXISTS idx_film_rating_length_cover;
+```
