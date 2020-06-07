@@ -293,9 +293,7 @@ In some scenarios we could want to create an index compose of multiples columns,
 
 [options="nowrap"]
 ```
-EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
-FROM film
-WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 
                                             QUERY PLAN
 --------------------------------------------------------------------------------------------------
@@ -313,9 +311,7 @@ WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 ```
 CREATE INDEX IF NOT EXISTS idx_film_length ON film (length);
 
-EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
-FROM film
-WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 
                                                         QUERY PLAN
 -------------------------------------------------------------------------------------------------------------------------
@@ -337,9 +333,7 @@ WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 ```
 CREATE INDEX IF NOT EXISTS idx_film_length_rating ON film (length,rating);
 
-EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
-FROM film
-WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 
                                                            QUERY PLAN
 ---------------------------------------------------------------------------------------------------------------------------------
@@ -367,9 +361,7 @@ Lets compare the query plan for the following queries:
 
 [options="nowrap"]
 ```
-EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
-FROM film
-WHERE length BETWEEN 60 AND 70;
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 
                                                            QUERY PLAN
 ---------------------------------------------------------------------------------------------------------------------------------
@@ -385,9 +377,7 @@ WHERE length BETWEEN 60 AND 70;
 
 [options="nowrap"]
 ```
-EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
-FROM film
-WHERE rating = 'G';
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 
                                              QUERY PLAN
 ----------------------------------------------------------------------------------------------------
@@ -412,9 +402,7 @@ DROP INDEX IF EXISTS idx_film_length_rating;
 CREATE INDEX IF NOT EXISTS idx_film_length ON film (length);
 CREATE INDEX IF NOT EXISTS idx_film_rating ON film (rating);
 
-EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate
-FROM film
-WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
 
                                                             QUERY PLAN
 ----------------------------------------------------------------------------------------------------------------------------------
@@ -439,6 +427,28 @@ We can use this query plan to understand more about _BitmapAnd_ and _BitmapOr_.
 * BitmapOr: Generate a bitmap of the union of two physical row location bitmaps (that is, locations that occur in either bitmap). The bitmaps can come from Bitmap Index Scans or other BitmapOr or BitmapAnd child nodes.
 
 In both cases due to internal implementation limitations, these nodes do not track the number of rows they produce. Their row count will always be listed as "Unknown" (0) and they will not be flagged as mis-estimates.
+
+7) Index Only Scan (Cover Index)
+
+A covering index is one which can satisfy all requested columns in a query without performing a further lookup into the clustered index.
+
+[options="nowrap"]
+```
+CREATE INDEX idx_film_rating_length_cover ON film (rating,length,title,replacement_cost,rental_rate);
+
+EXPLAIN ANALYSE SELECT title, length, rating, replacement_cost, rental_rate FROM film WHERE length BETWEEN 60 AND 70 AND rating = 'G';
+
+                                                                QUERY PLAN
+------------------------------------------------------------------------------------------------------------------
+ Index Only Scan using idx_film_rating_length_cover on film  (cost=0.28..4.57 rows=13 width=21) (actual time=0.014
+   Index Cond: ((rating = 'G'::mpaa_rating) AND (length >= 60) AND (length <= 70))
+   Heap Fetches: 0
+ Planning time: 0.230 ms
+ Execution time: 0.067 ms
+(5 rows)
+```
+
+*Analysis:* Given the fact the index contains all the neccesary fields the query does not need to fetch data from table so it is using _Index Only Scan_. If you do not get this plan, it could be due to statistics run _VACUUM film;_ and _ANALYZE film;_
 
 6) Clean up
 
