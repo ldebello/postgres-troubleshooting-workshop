@@ -66,4 +66,5 @@ psql -h localhost -p 15432 -U postgres
 * https://github.com/heroku/heroku-pg-extras
 * https://vladmihalcea.com/how-does-mvcc-multi-version-concurrency-control-work/
 * https://habr.com/ru/company/postgrespro/blog/
+* https://www.postgresqltutorial.com/
 * https://www.pluralsight.com/courses/postgresql-index-tuning-performance-optimization

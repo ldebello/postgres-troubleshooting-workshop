@@ -8,3 +8,148 @@ Indexes allows us to improve the performance of our queries. Depending on the ty
 * Hash: It is useful only for equality comparison.
 * GIN (Generalized Inverted Index): It is useful when working full text search.
 * GiST (Generalized Search Tree Index): It is useful when working with geometry data and full text search.
+
+== Unique Index vs Unique Constraint vs Primary Key Constraint
+
+PostgreSQL automatically creates a _unique index_ when a _unique constraint_ or _primary key_ is defined on the table. That means the index does not have to be created separately.
+
+This means we do not have to create unique index specifically on either of these columns. If we still happen to create unique index on those columns where there is unique constraint or primary key, it will be just duplicate index, and it is absolutely not recommended.
+
+*Note:* We can see the index using `\d <TABLE>`
+
+== Index Expression
+
+We can also create an index based on an expression that involves table columns. This index is called an index on expression.
+
+=== Hands On
+
+1) Prepare sample data
+
+[options="nowrap"]
+```
+UPDATE film SET title = 'Academy Dinosaur' WHERE title = 'ACADEMY DINOSAUR';
+```
+
+2) Compare queries
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE title = 'Academy Dinosaur';
+
+                               QUERY PLAN
+------------------------------------------------------------------------
+ Index Scan using idx_title on film  (cost=0.28..8.29 rows=1 width=386)
+   Index Cond: ((title)::text = 'Academy Dinosaur'::text)
+(2 rows)
+
+EXPLAIN SELECT * FROM film WHERE lower(title) = lower('AcademY DinosauR');
+
+                         QUERY PLAN
+-------------------------------------------------------------
+ Seq Scan on film  (cost=0.00..70.00 rows=5 width=386)
+   Filter: (lower((title)::text) = 'academy dinosaur'::text)
+(2 rows)
+```
+
+*Analysis:* In the second query where using the _lower_ function the index cannot be used. Let's fix that.
+
+3) Create index on expression
+
+[options="nowrap"]
+```
+CREATE INDEX IF NOT EXISTS film_title_lower ON film (lower(title));
+```
+
+4) Compare queries again
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE title = 'Academy Dinosaur';
+
+                               QUERY PLAN
+------------------------------------------------------------------------
+ Index Scan using idx_title on film  (cost=0.28..8.29 rows=1 width=386)
+   Index Cond: ((title)::text = 'Academy Dinosaur'::text)
+(2 rows)
+
+EXPLAIN SELECT * FROM film WHERE lower(title) = lower('AcademY DinosauR');
+
+                                      QUERY PLAN
+--------------------------------------------------------------------------------------
+ Index Scan using film_title_lower on film  (cost=0.28..8.29 rows=1 width=386)
+   Index Cond: (lower((title)::text) = 'academy dinosaur'::text)
+(2 rows)
+```
+
+*Analysis:* In this case the new index is used.
+
+5) Clean up
+
+[options="nowrap"]
+```
+DROP INDEX IF EXISTS film_title_lower;
+```
+
+== Partial Index
+
+PostgreSQL partial index even allows us to specify the rows of a table that should be indexed. This partial index helps speed up the query while reducing the size of the index.
+
+=== Hands On
+
+1) Compare queries
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE length = 50;
+
+                      QUERY PLAN
+-------------------------------------------------------
+ Seq Scan on film  (cost=0.00..67.50 rows=9 width=386)
+   Filter: (length = 50)
+(2 rows)
+
+EXPLAIN SELECT * FROM film WHERE length = 70;
+
+                      QUERY PLAN
+-------------------------------------------------------
+ Seq Scan on film  (cost=0.00..67.50 rows=6 width=386)
+   Filter: (length = 70)
+(2 rows)
+```
+
+2) Create Partial Index
+
+[options="nowrap"]
+```
+CREATE INDEX IF NOT EXISTS film_length_partial ON film (length) WHERE length < 60;
+```
+
+3) Compare queries again
+
+[options="nowrap"]
+```
+EXPLAIN SELECT * FROM film WHERE length = 50;
+
+                                    QUERY PLAN
+----------------------------------------------------------------------------------
+ Bitmap Heap Scan on film  (cost=4.21..29.40 rows=9 width=386)
+   Recheck Cond: (length = 50)
+   ->  Bitmap Index Scan on film_length_partial  (cost=0.00..4.21 rows=9 width=0)
+         Index Cond: (length = 50)
+(4 rows)
+
+EXPLAIN SELECT * FROM film WHERE length = 70;
+
+                      QUERY PLAN
+-------------------------------------------------------
+ Seq Scan on film  (cost=0.00..67.50 rows=6 width=386)
+   Filter: (length = 70)
+(2 rows)
+```
+
+4) Clean up
+
+[options="nowrap"]
+```
+DROP INDEX IF EXISTS film_length_partial;
+```
