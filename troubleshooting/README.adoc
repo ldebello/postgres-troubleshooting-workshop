@@ -58,6 +58,19 @@ This command displays statements, obtained from `pg_stat_statements`, ordered by
 
 *Note:* To use this query you have to configure the https://www.postgresql.org/docs/9.6/pgstatstatements.html[pg_stat_statements] extension.
 
+`*link:buffers.sql[buffers]*`
+[options="nowrap"]
+```
+          relname          | buffers |  buffered  | buffer_percentage | table_percentage
+---------------------------+---------+------------+-------------------+------------------
+ film                      |      55 | 440 kB     |               0.3 |             91.7
+(1 row)
+```
+
+This command displays the usage of shared_buffers database cache. The output ordered by relation percentage taken in shared buffer, it also shows that how much of the whole relation is buffered.
+
+*Note:* To use this query you have to configure the https://www.postgresql.org/docs/9.6/pgbuffercache.html[pg_buffercache] extension.
+
 `*link:duplicated-indexes.sql[duplicated-indexes]*`
 [options="nowrap"]
 ```
