@@ -108,7 +108,7 @@ SELECT pg_stat_get_tuples_hot_updated('hot'::regclass::oid);
 
 Depending in the table and the percentage of HOT updates we can use different techniques.
 
-* High HOT Percentage: In this case we can modify the parameter _fillfactor_ which by default is 100% (Meaning the whole page will be used) and we can decrease this value to leave some free space in each page to allow store copy of the rows. 
+* High HOT Percentage: In this case we can modify the parameter _fillfactor_ which by default is 100% (Meaning the whole page will be used) and we can decrease this value to leave some free space in each page to allow store copy of the rows.
 ** This will increase the size of our tables in disk.
 ** The _fillfactor_ will be take into account for new pages if we want to modify existing pages we need to execute _VACUUM FULL_
 

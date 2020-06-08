@@ -58,5 +58,5 @@ SELECT
 FROM
   index_bloat) bloat_summary
 ORDER BY
-  raw_waste DESC, 
+  raw_waste DESC,
   bloat DESC;

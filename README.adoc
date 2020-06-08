@@ -1,6 +1,6 @@
 = Postgres Troubleshooting Workshop
 
-The idea of this workshop is to provide all the necessary tools to analyze issues in our DBs. 
+The idea of this workshop is to provide all the necessary tools to analyze issues in our DBs.
 
 *Note:* All this is based on PostgreSQL 9.6
 
@@ -19,7 +19,7 @@ docker run -d \
     -v $(pwd)/sakila:/docker-entrypoint-initdb.d \
     postgres:9.6-alpine \
     -c 'shared_preload_libraries=pg_stat_statements'
-``` 
+```
 
 2) Configure PAGER (psql)
 

@@ -7,6 +7,6 @@ SELECT
   interval '1 millisecond' * (blk_read_time + blk_write_time) AS sync_io_time
 FROM
   pg_stat_statements
-ORDER BY 
+ORDER BY
   total_time DESC
 LIMIT 10;

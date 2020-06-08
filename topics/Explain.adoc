@@ -59,12 +59,12 @@ Lets do some math
 
 [options="nowrap"]
 ```
-SELECT 
+SELECT
     relpages AS "Disk Page Read",
     reltuples AS "Rows Scanned"
-FROM 
-    pg_class 
-WHERE 
+FROM
+    pg_class
+WHERE
     relname = 'film';
 
 Disk Page Read | Rows Scanned
@@ -272,7 +272,7 @@ EXPLAIN ANALYSE SELECT title, length FROM film WHERE length = 60;
 |===
 
 After building our bitmap _Bitmap Heap Scan_ will looks up the relevant data. Each chunk of a bitmap can either be exact (pointing directly to rows) or lossy (pointing to a page containing at least one row matching the predicate).
-Postgres prefers using exact blocks, but if limited `work_mem (SHOW work_mem)` is an issue, it will start using lossy blocks as well. 
+Postgres prefers using exact blocks, but if limited `work_mem (SHOW work_mem)` is an issue, it will start using lossy blocks as well.
 
 4) Drop index
 

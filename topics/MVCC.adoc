@@ -217,7 +217,7 @@ SELECT xmin, xmax, value FROM numbers;
 
 11) Lesson Learned
 
-*Takeaway*: If the TRX Id is lower than the xmin value, then it’s up to the https://www.postgresql.org/docs/9.6/transaction-iso.html[isolation level] to decide if a record should be visible or not. 
+*Takeaway*: If the TRX Id is lower than the xmin value, then it’s up to the https://www.postgresql.org/docs/9.6/transaction-iso.html[isolation level] to decide if a record should be visible or not.
 
 * READ COMMITTED: The currently executing statement timestamp becomes the lower boundary for row visibility.
 

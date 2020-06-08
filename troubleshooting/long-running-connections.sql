@@ -3,10 +3,10 @@ SELECT
   age(now(), pg_stat_activity.backend_start) AS duration,
   query,
   state
-FROM 
+FROM
   pg_stat_activity
-WHERE 
-  state != 'idle' AND 
+WHERE
+  state != 'idle' AND
   pid != pg_backend_pid() AND
   datname = current_database() AND
   now() - pg_stat_activity.backend_start > interval '5 seconds'
