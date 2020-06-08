@@ -61,9 +61,9 @@ This command displays statements, obtained from `pg_stat_statements`, ordered by
 `*link:buffers.sql[buffers]*`
 [options="nowrap"]
 ```
-          relname          | buffers |  buffered  | buffer_percentage | table_percentage
----------------------------+---------+------------+-------------------+------------------
- film                      |      55 | 440 kB     |               0.3 |             91.7
+     name     | type  | buffers |  buffered  | buffer_percentage | table_percentage
+--------------+-------+---------+------------+-------------------+------------------
+ film         | Table |      55 | 440 kB     |               0.3 |             91.7
 (1 row)
 ```
 

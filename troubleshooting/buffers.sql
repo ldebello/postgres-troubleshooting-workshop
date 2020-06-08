@@ -1,5 +1,16 @@
 SELECT
-  c.relname,
+  c.relname AS name,
+  CASE 
+    WHEN MAX(c.relkind) = 'r' THEN 'Table'
+    WHEN MAX(c.relkind) = 'i' THEN 'Index'
+    WHEN MAX(c.relkind) = 's' THEN 'Sequence'
+    WHEN MAX(c.relkind) = 'v' THEN 'View'
+    WHEN MAX(c.relkind) = 'm' THEN 'Materialized View'
+    WHEN MAX(c.relkind) = 'c' THEN 'Composite Type'
+    WHEN MAX(c.relkind) = 't' THEN 'Toast Table'
+    WHEN MAX(c.relkind) = 'f' THEN 'Foreign Table'
+    ELSE 'Unknown'
+  END AS type,
   COUNT(*) AS buffers,
   pg_size_pretty(COUNT(*) * 8192) AS buffered,
   ROUND(100.0 * COUNT(*) / (SELECT setting FROM pg_settings WHERE name='shared_buffers')::integer,1) AS buffer_percentage,
