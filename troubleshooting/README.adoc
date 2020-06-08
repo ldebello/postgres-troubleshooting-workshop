@@ -11,7 +11,7 @@ pid  | usename  |             query             | blocking_id |   blocking_state
 (1 row)
 ```
 
-This command displays statements that are currently holding locks that other statements are waiting to be released. This can be used in conjunction with `*locks*` to determine which statements need to be terminated in order to resolve lock contention.
+This query displays statements that are currently holding locks that other statements are waiting to be released. This can be used in conjunction with `*locks*` to determine which statements need to be terminated in order to resolve lock contention.
 
 *Note:* The column `blocking_query` could mean that the query is still running or that was the last query executed by the blocking pid. We need to check the column `blocking_state` to understand this, where _active_ means query still running.
 
@@ -28,7 +28,7 @@ pid  | relname | transactionid | granted |         query_snippet         |      
 (5 rows)
 ```
 
-This command displays queries that have taken out an exlusive lock on a relation. Exclusive locks typically prevent other operations on that relation from taking place, and can be a cause of "hung" queries that are waiting for a lock to be granted.
+This query displays queries that have taken out an exlusive lock on a relation. Exclusive locks typically prevent other operations on that relation from taking place, and can be a cause of "hung" queries that are waiting for a lock to be granted.
 
 `*link:long-running-queries.sql[long-running-queries]*`
 [options="nowrap"]
@@ -40,7 +40,7 @@ This command displays queries that have taken out an exlusive lock on a relation
 (2 rows)
 ```
 
-This command displays currently running queries, that have been running for longer than 5 seconds, descending by duration. Very long running queries can be a source of multiple issues, such as preventing DDL statements completing or vacuum being unable to update `relfrozenxid`.
+This query displays currently running queries, that have been running for longer than 5 seconds, descending by duration. Very long running queries can be a source of multiple issues, such as preventing DDL statements completing or vacuum being unable to update `relfrozenxid`.
 
 *Note:* We can also use its variants to detect long running transactions and long running connections. It is important because maybe our DB is performing but we are using very long transactions which could generate some contention on the DB. Its variant about long running connections allows us to detect long live backend process which would be top contributors about memory usage due to its internal caching.
 
@@ -54,7 +54,7 @@ This command displays currently running queries, that have been running for long
 (2 rows)
 ```
 
-This command displays statements, obtained from `pg_stat_statements`, ordered by the amount of time to execute in aggregate. This includes the statement itself, the total execution time for that statement, the proportion of total execution time for all statements that statement has taken up, the number of times that statement has been called, and the amount of time that statement spent on synchronous I/O (reading/writing from the filesystem), sync_io_time only is available when _track_io_timing_ is enabled (Off by default).
+This query displays statements, obtained from `pg_stat_statements`, ordered by the amount of time to execute in aggregate. This includes the statement itself, the total execution time for that statement, the proportion of total execution time for all statements that statement has taken up, the number of times that statement has been called, and the amount of time that statement spent on synchronous I/O (reading/writing from the filesystem), sync_io_time only is available when _track_io_timing_ is enabled (Off by default).
 
 *Note:* To use this query you have to configure the https://www.postgresql.org/docs/9.6/pgstatstatements.html[pg_stat_statements] extension.
 
@@ -67,7 +67,7 @@ This command displays statements, obtained from `pg_stat_statements`, ordered by
 (1 row)
 ```
 
-This command displays the usage of shared_buffers database cache. The output ordered by relation percentage taken in shared buffer, it also shows that how much of the whole relation is buffered.
+This query displays the usage of shared_buffers database cache. The output ordered by relation percentage taken in shared buffer, it also shows that how much of the whole relation is buffered.
 
 *Note:* To use this query you have to configure the https://www.postgresql.org/docs/9.6/pgbuffercache.html[pg_buffercache] extension.
 
@@ -83,7 +83,7 @@ This command displays the usage of shared_buffers database cache. The output ord
 (4 rows)
 ```
 
-This command displays duplicated indexes using two strategies.
+This query displays duplicated indexes using two strategies.
 
 1. Exact Match: In this case the index is using the same columns in the same order, so duplicated indexes could be removed.
 
@@ -100,7 +100,7 @@ This command displays duplicated indexes using two strategies.
 (3 rows)
 ```
 
-This command displays indexes that have < 50 scans recorded against them, and are greater than 5 pages in size, ordered by index size. This command is generally useful for eliminating indexes that are unused, which can impact write performance, as well as read performance should they occupy space in memory.
+This query displays indexes that have < 50 scans recorded against them, and are greater than 5 pages in size, ordered by index size. It is generally useful for eliminating indexes that are unused, which can impact write performance, as well as read performance should they occupy space in memory.
 
 `*link:index-usage.sql[index-usage]*`
 [options="nowrap"]
@@ -114,7 +114,7 @@ This command displays indexes that have < 50 scans recorded against them, and ar
 (4 rows)
 ```
 
-This command provides information on the efficiency of indexes, represented as what percentage of total scans were index scans. A low percentage can indicate under indexing, or wrong data being indexed.
+This query provides information on the efficiency of indexes, represented as what percentage of total scans were index scans. A low percentage can indicate under indexing, or wrong data being indexed.
 
 `*link:missing-indexes.sql[missing-indexes]*`
 [options="nowrap"]
@@ -128,7 +128,7 @@ This command provides information on the efficiency of indexes, represented as w
  (4 rows)
 ```
 
-This command displays tables which could be missing and index this is infer based on the number of sequential scans.
+This query displays tables which could be missing and index this is infer based on the number of sequential scans.
 
 `*link:invalid-indexes.sql[invalid-indexes]*`
 [options="nowrap"]
@@ -138,7 +138,7 @@ index_name
 (0 rows)
 ```
 
-This command show any invalid index, an index could be invalid due to an error during its creation, for example when using _CREATE INDEX CONCURRENTLY_. In order to rebuild invalid indexes we have two choices:
+This query show any invalid index, an index could be invalid due to an error during its creation, for example when using _CREATE INDEX CONCURRENTLY_. In order to rebuild invalid indexes we have two choices:
 
 * Use the REINDEX command (*not suggested*)
 * Drop the index and try to re-build it again (*suggested*)
@@ -154,7 +154,7 @@ This command show any invalid index, an index could be invalid due to an error d
 (3 rows)
 ```
 
-This command provides information on the efficiency of the buffer cache, for both index reads (index hit rate) as well as table reads (table hit rate). A low buffer cache hit ratio can be a sign that the DB is too small for the workload.
+This query provides information on the efficiency of the buffer cache, for both index reads (index hit rate) as well as table reads (table hit rate). A low buffer cache hit ratio can be a sign that the DB is too small for the workload.
 
 `*link:size-information.sql[size-information]*`
 [options="nowrap"]
@@ -170,7 +170,7 @@ This command provides information on the efficiency of the buffer cache, for bot
  (6 rows)
 ```
 
-This command displays the total size of each table which include _table size_ + _index size_ + _toast size_.
+This query displays the total size of each table which include _table size_ + _index size_ + _toast size_.
 
 `*link:db-stats.sql[db-stats]*`
 [options="nowrap"]
@@ -182,7 +182,7 @@ This command displays the total size of each table which include _table size_ + 
 (2 rows)
 ```
 
-This command displays useful stats from our DBs, we want to have a low number of _temp_files_ and no _deadlocks_ or near to zero. One important thing to remember this stats are accumulative so if you want to reset them you need to execute _`SELECT pg_stat_reset();`_
+This query displays useful stats from our DBs, we want to have a low number of _temp_files_ and no _deadlocks_ or near to zero. One important thing to remember this stats are accumulative so if you want to reset them you need to execute _`SELECT pg_stat_reset();`_
 
 `*link:table-configurations.sql[table-configurations]*`
 [options="nowrap"]
@@ -194,7 +194,7 @@ This command displays useful stats from our DBs, we want to have a low number of
 (2 rows)
 ```
 
-This command displays all tables which has some specific configuration. Usually this is useful to check if some table is overriding some specific config which could affect the behaviour of background processes like _AUTOVACUUM_.
+This query displays all tables which has some specific configuration. Usually this is useful to check if some table is overriding some specific config which could affect the behaviour of background processes like _AUTOVACUUM_.
 
 `*link:connections.sql[connections]*`
 [options="nowrap"]
@@ -206,7 +206,7 @@ This command displays all tables which has some specific configuration. Usually 
 (2 rowS)
 ```
 
-This command displays number of connections per host. This is primarily useful for determining if a specific host is consuming many more connections than expected.
+This query displays number of connections per host. This is primarily useful for determining if a specific host is consuming many more connections than expected.
 
 *Note:* This can be a little tricky if multiples instances use the same IP, for example in kubernetes environment several pod could be running in the same node and connecting from the same IP.
 
@@ -219,7 +219,20 @@ This command displays number of connections per host. This is primarily useful f
 (1 row)
 ```
 
-This command displays statistics related to vacuum operations for each table, including an estiamtion of dead rows, last autovacuum and the current autovacuum threshold. This command can be useful when determining if current vacuum thresholds require adjustments, and to determine when the table was last vacuumed.
+This query displays statistics related to vacuum operations for each table, including an estiamtion of dead rows, last autovacuum and the current autovacuum threshold. It can be useful when determining if current vacuum thresholds require adjustments, and to determine when the table was last vacuumed.
+
+`*link:vacuum-execution.sql[vacuum-execution]*`
+[options="nowrap"]
+```
+ datname  | usename  | pid |  state  | wait_event |       xact_runtime      |                       query
+----------+----------+-----+-------+------------+--------------+-------------------------------------------------------------------------
+ workshop | postgres |  66 | active  |            | 33 days 16:32:11.600656 | autovacuum: VACUUM ANALYZE customer (to prevent wraparound)
+ workshop | postgres |  68 | active  |            | 14 days 09:15:34.073141 | autovacuum: VACUUM ANALYZE category (to prevent wraparound)
+ workshop | postgres |  70 | active  |            | 3 days 02:43:54.203349  | autovacuum: VACUUM ANALYZE film
+(3 rows)
+```
+
+This query displays if any _VACUUM_ task is running and how long has been running.
 
 `*link:bloat.sql[bloat]*`
 [options="nowrap"]
@@ -233,4 +246,4 @@ This command displays statistics related to vacuum operations for each table, in
  (4 rows)
 ```
 
-This command displays an estimation of table "bloat" – space allocated to a relation that is full of dead tuples, that has yet to be reclaimed. Tables that have a high bloat ratio, typically 10 or greater, should be investigated to see if vacuuming is aggressive enough, and can be a sign of high table churn.
+This query displays an estimation of table "bloat" – space allocated to a relation that is full of dead tuples, that has yet to be reclaimed. Tables that have a high bloat ratio, typically 10 or greater, should be investigated to see if vacuuming is aggressive enough, and can be a sign of high table churn.
