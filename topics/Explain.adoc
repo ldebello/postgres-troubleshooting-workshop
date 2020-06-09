@@ -4,6 +4,17 @@
 
 We use _EXPLAIN_ to understand the query plan from our queries, these plans are build based on the DB stats. _EXPLAIN_ supports multiples https://www.postgresql.org/docs/9.6/sql-explain.html[options] it is important to remember the option _ANALYZE_ is a profiler and execute the query against the DB so it has impact in performance.
 
+== DML Queries
+
+If we do an _EXPLAIN ANALYZE_ it actually carries out the action, which, for inserts, updates, and deletes will actually alter your data. To prevent this from happening you can to wrap the entire EXPLAIN ANALYZE in a transaction.
+
+[options="nowrap"]
+```
+BEGIN;
+EXPLAIN ANALYZE INSERT INTO category (category_id,name,last_update) VALUES ('99', 'Testing', now());
+ROLLBACK;
+```
+
 toc::[]
 == Hands On
 
