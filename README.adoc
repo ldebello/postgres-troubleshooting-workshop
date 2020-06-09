@@ -51,6 +51,7 @@ psql -h localhost -p 15432 -U postgres
 * link:topics/Indexes.adoc[Indexes]
 * link:topics/Explain.adoc[Explain]
 * link:troubleshooting/README.adoc[Troubleshooting]
+* link:stories/README.adoc[PostgreSQL Horror Story]
 
 == References
 

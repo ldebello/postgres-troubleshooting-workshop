@@ -1,0 +1,245 @@
+= PostgreSQL Horror Story
+:toc: macro
+:sectnumlevels: 4
+
+Let's try to learn something from our own errors
+
+toc::[]
+== Too Many Executions
+
+=== Summary
+
+One of our customer configured a scheduler to run every second, leading to our system to store the history of each execution later the UI was trying to fetch all the executions.
+
+=== Lessons Learned
+
+* Don't trust and use soft limits where possible.
+* Storing historical data can be tough be aware of this can remember purge stale and old data.
+
+== Huge Traffic Spike
+
+=== Summary
+
+We detected one of our customers generating a large number of requests which have a direct impact in our DB running too many queries which lead to CPU hig.
+
+=== Lessons Learned
+
+* Don't forget to apply proper rate limit in our services to protect ours DB.
+
+== Rollback???
+
+=== Summary
+
+We did a release adding some new indexes (seven), we decided to create two  of them using the _CONCURRENTLY_ option. We started seeing some slow queries, we started digging in our DB and postgreSQL documentation which leaded to a possible bug when building _CONCURRENTLY_ indexes, so we rebuilt those two indexes without any luck. After that we decided to rollback the changes, however we miss and only rollback 6 out of 7 indexes. At the end we delete the missing index and everything came back to normal.
+
+=== Lessons Learned
+
+* Have a good plan to rollback your changes.
+
+== Blacklisting???
+
+=== Summary
+
+Two years after doing some refactor we hit an issue where a HQL query was leading to 636k rows instead of 38k in one specific case.
+
+=== Lessons Learned
+
+* It is nice to have some way of filtering some specific traffic to win some time while fixing the issue or contacting the customer.
+
+== Casting can hurt
+
+=== Summary
+
+One of our queries was using the _N_ operator which performs a casting to _bpchar_ leading to do a seq scan instead of index scan.
+
+=== Lessons Learned
+
+* Avoid unnecessary functions/castings when possible.
+* We can use an expression index for this kind of situations.
+
+== Unbounded queries
+
+=== Summary
+
+One of our services was providing an internal endpoint which in some cases based on the parameters run a SQL query with no where clause, returning the entire dataset (about 1 million rows).
+
+=== Lessons Learned
+
+* Ensure where clauses and limit your queries when possible.
+
+== Connection pool (Low number of connections)
+
+=== Summary
+
+Setting correct values to our connection pool could be hard, in this particular case it was configured using a low number of connections which leaded to run out of connections when had to deal with a simple spike.
+
+=== Lessons Learned
+
+* Measure and estimate some initial values.
+* Include monitoring for adjusting these values when necessary.
+
+== Failover
+
+=== Summary
+
+Everybody loves automatic failover but also everybody forgets to be ready to handle those scenarios.
+
+=== Lessons Learned
+
+* Configure your connections for reconnect.
+* Configure your connection pooler for test on borrow behaviour.
+
+== Unbounded queries (Second round)
+
+=== Summary
+
+Customer accounts used for CI/CD were using our authentication service before every call, generating a new access token and session for each request. As the access tokens grew, this resulted in an unbounded query to the database that exhausted its memory, causing it to restart.
+
+=== Lessons Learned
+
+* Configure alerts for your DB resources (CPU Usage, Disk Space, Memory, IOPS, Connections).
+* In some cases is worth implement something bulkhead or ring buffer for some specific concurrent actions.
+
+== Are my indexes ok?
+
+=== Summary
+
+After some significant volume increase, one of our queries which was not using an appropriate index started doing full sequential scans which resulted in poor performance under load.
+
+=== Lessons Learned
+
+* Maintenance your DB and run frencuent analysis on volume increase.
+
+== Take care of your replicas
+
+=== Summary
+
+Let's talk about two different issues:
+
+1. During a DB upgrade we decided to move the traffic to our read replicas, however we forgot to check if the replica had the same specs of the primary to support the load, it resulted, it wasn't ready to that load.
+
+2. During a DB migration we decided to increase the IOPS and we did the change in the primary and forgot the replica, so this resulted in the performance degradation of the replica instance.
+
+=== Lessons Learned
+
+* Don't do like us and take care of your replica.
+
+== Overflow
+
+=== Summary
+
+Usually you think, it is impossible to reach that number until you reached it, nothing like having a int as primary key a you were lucky enough to get the winner 2,147,483,647.
+
+=== Lessons Learned
+
+* Try to think in advance if there is a real chance of going that high if you think no, the answer is yes.
+
+== Time to scale!!!
+
+=== Summary
+
+You cannot live forever with your tiny DB so when that time comes you need to grow more, get more core and memory.
+
+=== Lessons Learned
+
+* Don't wait until last minute to increase your DB instance.
+
+== Short transactions
+
+=== Summary
+
+We were doing some HTTP calls as part of our code base while holding a db connection in transaction mode, due to an error in the third party service and our retry strategy, our db started having high cpu usage, long transaction and less connections availables.
+
+=== Lessons Learned
+
+* Use short transactions and do everything what you can outside a transaction.
+* Configure proper timeouts _statement_timeout_ and _idle_in_transaction_session_timeout_. One drawback of _statement_timeout_ is when doing long migration it can impact those migrations.
+
+== DB Migrations (Backwards compatibility)
+
+=== Summary
+
+One DB migration was roll-out into production but the new code was rollbacked which lead to have a invalid DB schema for previous code.
+
+=== Lessons Learned
+
+* Ensure your DB migrations are backwards compatibility.
+* Decouple your DB migrations from your code deployments.
+
+== Crazy connection pool
+
+=== Summary
+
+As part of a scheduled DB restart, we faced some issues where the DB reached the maximum number of connections, and we thought this was lead by a spike in traffic however after some analysis we detected some instance with more than 200 connections althought the connection pooller was configure to max 100.
+
+=== Lessons Learned
+
+* Make sure you are using the right parameters for your connection pool.
+
+== Certificate expire
+
+=== Summary
+
+We thought our DB was not validating the DB certificate due to a parameter in the query string, however that parameter was not being honored.
+
+=== Lessons Learned
+
+* Make sure your DB has a valid certificate and check if your connections are using ssl using _pg_stat_ssl_.
+
+== Reading from replicas
+
+=== Summary
+
+While using our read replicas we hit a replication issue due to a WAL error which broke replication.
+
+=== Lessons Learned
+
+* Make sure your replication and if not fallback to primary.
+
+== Hardware can fail
+
+=== Summary
+
+A network interface on the primary database entered a degraded state, triggering a failover to the secondary database node, it took more than 10 minutes to be online and in a healthy state.
+
+=== Lessons Learned
+
+* Always ensure your failover works.
+
+== Too Many connections
+
+=== Summary
+
+We were running 1500 connections having some spikes which reach 3000 and this generate too many connections in idle state consuming a big chunk of memory 60MB approx per connection.
+
+=== Lessons Learned
+
+* Check number of temp files and try to decrease them.
+* Does not make any sense to have too many idle connections.
+* If you need to need more than 1000 connections try to use some dedicated connection pooler like PgBouncer.
+
+== Long running query
+
+=== Summary
+
+We got a high CPU usage in our DB and when checking the DB queries there was a purge running for more than four hours with a big transaction trying to delete several rows, this process was failing to delete rows and every day try to delete the same rows which leaded to a high CPU usage each day at the same time. The funny detail was nobody was aware of it running each morning.
+
+=== Lessons Learned
+
+* Short transactions for purge actions.
+* Document this kind a cron job so the team is aware of this.
+
+== Why my select is writing?
+
+=== Summary
+
+One month after doing a release we detect some increase in _Write Throughput_, however the number of writes (DELETE/INSERT/UPDATE) did not show a considerable traffic. After more digging we figure out the culprit was one of our SELECT, this was happening because if a query with Hash Join/Merge Join, Order By/Distinct needs more memory than _work_mem_ it is force to flush data to disk increasing the _Write Throughput_.
+
+=== Lessons Learned
+
+* We can configure _temp_buffers_ which defines the size reserved per connection for temporal tables.
+* We can configure _work_mem_ which defines the size reserved per connection for some operations ORDER BY, DISTINCT and for joining tables by merge-join and hash-join operations.
+* We can configure _maintenance_work_mem_ which defines the size for maintenance operations (e.g., VACUUM, REINDEX)
+
+
+
