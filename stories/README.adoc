@@ -241,5 +241,15 @@ One month after doing a release we detect some increase in _Write Throughput_, h
 * We can configure _work_mem_ which defines the size reserved per connection for some operations ORDER BY, DISTINCT and for joining tables by merge-join and hash-join operations.
 * We can configure _maintenance_work_mem_ which defines the size for maintenance operations (e.g., VACUUM, REINDEX)
 
+== Autovacuum you fail me again
 
+=== Summary
 
+We detected some bloat tables (meaning full of dead tuples), and our first assumption was autovacuum not running, however when we checked if was running as frequent as we expected, the small gotcha here is _autovacuum can only remove tuples that are no longer viewable by any transaction_. Meaning our long running queries could be blocking autovacuum and also idle transaction in case they performed a write. Also there was a chance of autovacuum being throttled but that was not our case at least for now.
+
+=== Lessons Learned
+
+* Short transactions
+* Configure proper timeouts _statement_timeout_ and _idle_in_transaction_session_timeout_.
+* Turn on logging for autovacuum and configure some alarms for _x dead row versions cannot be removed yet_.
+* Autovacuum was not failing to us only we fail to him.
