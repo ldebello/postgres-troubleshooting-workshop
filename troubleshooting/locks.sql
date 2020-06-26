@@ -2,6 +2,8 @@ SELECT
   pg_stat_activity.pid,
   pg_class.relname,
   pg_locks.transactionid,
+  pg_locks.mode,
+  pg_locks.locktype,
   pg_locks.granted,
   SUBSTRING(pg_stat_activity.query, 1, 50) AS query_snippet,
   age(now(), pg_stat_activity.query_start) AS duration

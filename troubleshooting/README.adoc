@@ -18,13 +18,13 @@ This query displays statements that are currently holding locks that other state
 `*link:locks.sql[locks]*`
 [options="nowrap"]
 ```
-pid  | relname | transactionid | granted |         query_snippet         |       age
------+---------+---------------+---------+-------------------------------+-----------------
-  39 |         |         47203 | t       | UPDATE numbers SET value = 4; | 00:18:02.95436
-  39 |         |               | t       | UPDATE numbers SET value = 4; | 00:18:02.95436
-  38 | numbers |               | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
-  38 |         |         47204 | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
-  38 |         |               | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
+pid  | relname | transactionid |         mode        | locktype | granted |         query_snippet         |       age
+-----+---------+---------------+---------+---------+---------+-------------------------------+-----------------------------
+  39 |         |         47203 | AccessExclusiveLock | tuple    | t       | UPDATE numbers SET value = 4; | 00:18:02.474137
+  39 |         |               | AccessExclusiveLock | tuple    | t       | UPDATE numbers SET value = 4; | 00:18:02.474137
+  38 | numbers |               | AccessExclusiveLock | tuple    | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
+  38 |         |         47204 | AccessExclusiveLock | tuple    | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
+  38 |         |               | AccessExclusiveLock | tuple    | t       | UPDATE numbers SET value = 5; | 00:17:59.464137
 (5 rows)
 ```
 
