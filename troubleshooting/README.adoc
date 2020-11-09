@@ -247,3 +247,25 @@ This query displays if any _VACUUM_ task is running and how long has been runnin
 ```
 
 This query displays an estimation of table "bloat" – space allocated to a relation that is full of dead tuples, that has yet to be reclaimed. Tables that have a high bloat ratio, typically 10 or greater, should be investigated to see if vacuuming is aggressive enough, and can be a sign of high table churn.
+
+`*link:dead-tuples.sql[dead-tuples]*`
+[options="nowrap"]
+```
+           table         | live_tuples | dead_tuples |        last_autovacuum
+-------------------------+-------------+-------------+-------------------------------
+ rental                  |           1 |          49 | 2020-11-09 06:42:02.975927+00
+ example                 |       19486 |        1445 | 2020-11-09 12:10:57.724879+00
+(2 rows)
+```
+
+This query show the the number of live and dead tuples so we can correlate that information with vacuum process.
+
+`*link:replication-slots.sql[replication-slots]*`
+[options="nowrap"]
+```
+ slot_name | slot_type | database | active | active_pid | xmin
+-----------+-----------+----------+--------+------------+------
+(0 rows)
+```
+
+This query displays information about  replication slots and their relative xmin.
