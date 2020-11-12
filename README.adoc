@@ -55,6 +55,7 @@ psql -h localhost -p 15432 -U postgres
 
 == References
 
+* https://pgstats.dev/
 * https://www.postgresql.org/docs/9.6/
 * http://www.interdb.jp/pg/index.html
 * https://www.citusdata.com/blog/
