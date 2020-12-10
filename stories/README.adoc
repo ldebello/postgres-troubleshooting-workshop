@@ -253,3 +253,13 @@ We detected some bloat tables (meaning full of dead tuples), and our first assum
 * Configure proper timeouts _statement_timeout_ and _idle_in_transaction_session_timeout_.
 * Turn on logging for autovacuum and configure some alarms for _x dead row versions cannot be removed yet_.
 * Autovacuum was not failing to us only we fail to him.
+
+== Betrayed by our db migrations
+
+=== Summary
+
+We used Flyway to run our DB migrations, springboot run flyway migrations upon service starts but we deploy our service in k8s and configure a liveness/readiness endpoint, given the fact our last migration was taking too much time k8s decide to kill the pod leading to kill the db connection and we enter in a kind a infinite loop where the migration cannot finish and k8s killing our pods, generating too much garbage (dead tuples) in our DB.
+
+=== Lessons Learned
+
+* Split your DB migrations from your service deployment.
