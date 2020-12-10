@@ -194,7 +194,7 @@ While using our read replicas we hit a replication issue due to a WAL error whic
 
 === Lessons Learned
 
-* Make sure your replication and if not fallback to primary.
+* Make sure your replication is working and if not fallback to primary.
 
 == Hardware can fail
 
@@ -204,7 +204,7 @@ A network interface on the primary database entered a degraded state, triggering
 
 === Lessons Learned
 
-* Always ensure your failover works.
+* Always ensure your failover works (Try them).
 
 == Too Many connections
 
@@ -227,7 +227,7 @@ We got a high CPU usage in our DB and when checking the DB queries there was a p
 === Lessons Learned
 
 * Short transactions for purge actions.
-* Document this kind a cron job so the team is aware of this.
+* Document this kind of cron jobs so the team is aware of this.
 
 == Why my select is writing?
 
