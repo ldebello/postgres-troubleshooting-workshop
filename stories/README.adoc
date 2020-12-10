@@ -20,7 +20,7 @@ One of our customer configured a scheduler to run every second, leading to our s
 
 === Summary
 
-We detected one of our customers generating a large number of requests which have a direct impact in our DB running too many queries which lead to CPU hig.
+We detected one of our customers generating a large number of requests which have a direct impact in our DB running too many queries which lead to CPU high.
 
 === Lessons Learned
 
