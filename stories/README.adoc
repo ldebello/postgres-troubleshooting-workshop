@@ -263,3 +263,20 @@ We used Flyway to run our DB migrations, springboot run flyway migrations upon s
 === Lessons Learned
 
 * Split your DB migrations from your service deployment.
+
+== The Case of the Schrödinger Row
+
+=== Summary
+
+After upgrading PostgreSQL from 14 to 17, we observed inconsistent query results: some rows appeared or disappeared depending on whether the query used `=` or `LIKE`, even though the data had no visible differences (no extra spaces, same strings).
+
+The root cause was not the data itself, but the indexes. They had been built under a previous glibc/collation version, and after the upgrade the collation rules changed. This made the index ordering inconsistent with the new comparison rules, leading PostgreSQL to incorrectly skip rows during index scans.
+
+In short: the data was there, but the index could no longer “see” it reliably.
+
+=== Lessons Learned
+
+* Rebuild indexes after PostgreSQL upgrades, especially when glibc/ICU versions change  
+* Collation changes can silently corrupt index ordering for text-based columns  
+* Symptoms can be subtle: queries returning different results depending on whether an index is used  
+* `C`/`POSIX` collations are immune to this class of issues
